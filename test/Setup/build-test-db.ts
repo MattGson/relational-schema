@@ -6,7 +6,7 @@ import { Connection as MySQLConn } from 'promise-mysql';
 import { DB } from './test.env';
 type PoolConnection = PGConn | MySQLConn;
 
-export const schemaName = 'gybson_test';
+export const schemaName = 'tests';
 export const mysqlConnection: Connection = {
     client: 'mysql',
     connection: {
@@ -39,7 +39,6 @@ const state: any = {
 };
 
 // helpers for testing manual connection handling
-export const getPoolConnection = async () => state.knex.client.acquireConnection();
 export const closePoolConnection = async (connection: PoolConnection) =>
     state.knex.client.releaseConnection(connection);
 

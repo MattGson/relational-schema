@@ -12,7 +12,7 @@ const features = [
     imageUrl: 'img/donut.svg',
     description: (
       <>
-          Gybson auto-generates a Typescript client for your exact database schema.
+          relational-schema auto-generates a Typescript client for your exact database schema.
         Benefit from full type-safety and IDE auto-completion.
       </>
     ),
@@ -22,7 +22,7 @@ const features = [
     imageUrl: 'img/graphql.svg',
     description: (
       <>
-        Gybson uses batching and caching (de-duplication) to minimise round trips to the database. This makes it perfect for building GraphQL APIs.
+        relational-schema uses batching and caching (de-duplication) to minimise round trips to the database. This makes it perfect for building GraphQL APIs.
       </>
     ),
   },
@@ -31,7 +31,7 @@ const features = [
     imageUrl: 'img/team.svg',
     description: (
       <>
-        Gybson has an extensive and flexible query API including relation filtering. Gybson isn't opinionated about how you build your app, it just helps you work with your data.
+        relational-schema has an extensive and flexible query API including relation filtering. relational-schema isn't opinionated about how you build your app, it just helps you work with your data.
       </>
     ),
   },

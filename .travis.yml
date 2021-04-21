@@ -17,8 +17,8 @@ services:
 
 before_install:
     - mysql -e 'SET PASSWORD FOR "root"@"localhost" = PASSWORD("");' -uroot
-    - mysql -e "create database gybson_test"
-    - psql -c 'create database gybson_test;' -U postgres
+    - mysql -e "create database relational-schema_test"
+    - psql -c 'create database relational-schema_test;' -U postgres
 
 script:
     - npm run test-mysql

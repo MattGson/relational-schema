@@ -31,9 +31,12 @@ Change the contents of the file to connect to your database.
 The `outdir` option specifies where the Javascript schema files will be output.
 This should be inside of your project source so that the files are transpiled as part of your build.
 
-The `client` option specifies the sql client for the underlying Knex logic. You can choose between `mysql` and `pg`.
+Supported output formats:
 
-i.e.
+-   `json`, `es6`, `typescript`, `commonJS`
+
+For the `client` option you can choose between `mysql` and `pg`.
+
 
 ```json
 {
@@ -42,7 +45,9 @@ i.e.
     "user": "root",
     "password": "",
     "database": "users",
+    "schema": "public",
     "outdir": "./src/generated",
+    "format": "json",
     "client": "pg"
 }
 ```

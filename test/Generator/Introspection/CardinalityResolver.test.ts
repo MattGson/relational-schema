@@ -1,17 +1,15 @@
-import { Introspection } from '../../../src/Generator/Introspection/IntrospectionTypes';
+import { Introspection } from '../../../src/schema-generator/introspection/IntrospectionTypes';
 import { buildDBSchemas, closeConnection, knex, schemaName } from '../../Setup/build-test-db';
-import { CardinalityResolver } from '../../../src/Generator/Introspection/CardinalityResolver';
+import { CardinalityResolver } from '../../../src/schema-generator/introspection/CardinalityResolver';
 import 'jest-extended';
 import { getIntrospection } from '../../Setup/test.env';
 
 describe('CardinalityResolver', () => {
     let intro: Introspection;
-    beforeAll(
-        async (): Promise<void> => {
-            await buildDBSchemas();
-            intro = getIntrospection(knex(), schemaName);
-        },
-    );
+    beforeAll(async () => {
+        await buildDBSchemas();
+        intro = getIntrospection(knex(), schemaName);
+    });
     afterAll(async () => {
         await closeConnection();
     });

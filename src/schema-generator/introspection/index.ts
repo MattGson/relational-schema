@@ -13,6 +13,7 @@ export interface Connection {
         user: string;
         password: string;
         database: string;
+        schema?: string;
         multipleStatements?: boolean;
     };
     pool?: {
@@ -38,11 +39,16 @@ export const introspectSchema = async (params: { conn: Connection }): Promise<Da
         DB = new PostgresIntrospection(knex);
     }
 
-    const schema: DatabaseSchema = {};
+    const schema: DatabaseSchema = {
+        database: conn.connection.database,
+        schema: conn.connection.schema ?? conn.connection.database,
+        generatedAt: new Date(),
+        tables: {},
+    };
     const tables = await DB.getSchemaTables();
 
     for (const table of tables) {
-        schema[table] = await new TableSchemaBuilder(table, DB).buildTableDefinition();
+        schema.tables[table] = await new TableSchemaBuilder(table, DB).buildTableDefinition();
     }
     await knex.destroy();
 
