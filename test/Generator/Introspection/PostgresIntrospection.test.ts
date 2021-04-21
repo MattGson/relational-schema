@@ -1,7 +1,7 @@
 import { buildDBSchemas, closeConnection, knex } from '../../Setup/build-test-db';
-import { Introspection } from '../../../src/Generator/Introspection/IntrospectionTypes';
+import { Introspection } from '../../../src/schema-generator/introspection/IntrospectionTypes';
 import 'jest-extended';
-import { PostgresIntrospection } from '../../../src/Generator/Introspection/PostgresIntrospection';
+import { PostgresIntrospection } from '../../../src/schema-generator/introspection/PostgresIntrospection';
 import { describeif } from '../../Setup/helpers';
 import { DB } from '../../Setup/test.env';
 

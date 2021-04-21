@@ -6,10 +6,13 @@
 
 import { usage } from 'yargs';
 import path from 'path';
-import { generate } from '../index';
+import { Format, generate } from '../index';
 
 type client = 'mysql' | 'pg';
 const clients: ReadonlyArray<client> = ['mysql', 'pg'];
+
+type format = Format;
+const formats: ReadonlyArray<Format> = [Format.json, Format.commonJS, Format.es6, Format.typescript];
 
 const args = usage('Usage: $0 <command> [options]')
     .options({
@@ -20,14 +23,14 @@ const args = usage('Usage: $0 <command> [options]')
         password: { type: 'string', default: '' },
         database: { type: 'string', default: 'public' },
         outdir: { type: 'string', default: './gen' },
+        format: { choices: formats, default: formats[0] },
     })
     .global('config')
     .default('config', 'introspect-config.json')
     .config('config', 'Configure using a json file')
-    .command('generate', 'Generate database client')
-    .example('$0 generate', 'generate the client using a introspect-config.json file in the current directory') //     .demand('o')
+    .command('introspect', 'Generate schema from database')
+    .example('$0 introspect', 'generate the schema using a introspect-config.json file in the current directory') //     .demand('o')
     .alias('h', 'help').argv;
-
 
 const run = async () => {
     try {
@@ -42,11 +45,12 @@ const run = async () => {
             },
         };
         const outdir = args.outdir;
+        const format = args.format;
 
         const CURRENT = process.cwd();
         const GENERATED_DIR = path.join(CURRENT, outdir);
 
-        await generate(conn, GENERATED_DIR);
+        await generate(conn, GENERATED_DIR, format);
     } catch (e) {
         console.error(e.message);
         console.log('Use: "relation -h" to see help');
@@ -63,4 +67,3 @@ run()
         console.log('Use: "relation -h" to see help');
         process.exit(1);
     });
-

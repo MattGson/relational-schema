@@ -1,5 +1,5 @@
-import { MySQLIntrospection } from '../../src/Generator/Introspection/MySQLIntrospection';
-import { PostgresIntrospection } from '../../src/Generator/Introspection/PostgresIntrospection';
+import { MySQLIntrospection } from '../../src/schema-generator/introspection/MySQLIntrospection';
+import { PostgresIntrospection } from '../../src/schema-generator/introspection/PostgresIntrospection';
 
 export const DB = (): 'mysql' | 'pg' => {
     const db = process.env.DB;

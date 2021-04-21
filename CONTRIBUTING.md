@@ -5,7 +5,7 @@
 Steps to contribute:
 
 - Make your changes on a fork
-- Run `npm run test`
+- Run the tests
 - Submit pull a request
 
-Our project runs `npm test` automatically on pull requests via TravisCi.
+Our project runs tests automatically on pull requests via CI

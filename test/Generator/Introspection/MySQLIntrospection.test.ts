@@ -1,6 +1,6 @@
 import { buildDBSchemas, closeConnection, knex, schemaName } from '../../Setup/build-test-db';
-import { MySQLIntrospection } from '../../../src/Generator/Introspection/MySQLIntrospection';
-import { Introspection } from '../../../src/Generator/Introspection/IntrospectionTypes';
+import { MySQLIntrospection } from '../../../src/schema-generator/introspection/MySQLIntrospection';
+import { Introspection } from '../../../src/schema-generator/introspection/IntrospectionTypes';
 import 'jest-extended';
 import { describeif } from '../../Setup/helpers';
 import { DB } from '../../Setup/test.env';

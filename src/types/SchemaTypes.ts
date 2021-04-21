@@ -81,5 +81,10 @@ export interface TableSchemaDefinition {
 }
 
 export interface DatabaseSchema {
-    [tableName: string]: TableSchemaDefinition;
+    database: string;
+    schema: string;
+    generatedAt: Date;
+    tables: {
+        [tableName: string]: TableSchemaDefinition;
+    }
 }

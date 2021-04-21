@@ -8,7 +8,7 @@ docs/
 test/
 .idea
 jest.config.js
-gybson-config.json
+relational-schema-config.json
 *.md
 .travis.yml
 .prettierrc.js

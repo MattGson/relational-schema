@@ -15,7 +15,7 @@ module.exports = {
             title: 'relational-schema',
             logo: {
                 alt: 'My Site Logo',
-                src: 'img/gybson-logo.png',
+                src: 'img/relational-schema-logo.png',
             },
             items: [
                 {
