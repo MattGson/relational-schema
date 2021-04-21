@@ -13,10 +13,10 @@ module.exports = {
         },
         navbar: {
             title: 'relational-schema',
-            logo: {
-                alt: 'My Site Logo',
-                src: 'img/relational-schema-logo.png',
-            },
+            // logo: {
+            //     alt: 'My Site Logo',
+            //     src: 'img/relational-schema-logo.png',
+            // },
             items: [
                 {
                     to: 'docs/',

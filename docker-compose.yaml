@@ -26,4 +26,4 @@ services:
 
         ports:
             - 3306:3306
-        command: mysqld --log-bin=mysql-bin --binlog-format=row --binlog-row-image=full --expire-logs-days=1 --gtid-mode=ON --enforce-gtid-consistency=ON
+        command: mysqld --log-bin=mysql-bin --binlog-format=row --binlog-row-image=full --server-id=1 --expire-logs-days=1 --gtid-mode=ON --enforce-gtid-consistency=ON

@@ -15,7 +15,7 @@
         "lint": "eslint ./src",
         "build": "tsc",
         "dependency-check": "dependency-check . --entry src/schema-generator/cli/entry.ts --missing --no-dev",
-        "docker:start": "docker-compose up",
+        "docker:start": "docker-compose up -d",
         "docker:stop": "docker-compose down",
         "test:pg": "DB=pg ts-node ./test/Setup/build-test-client.ts --transpile-only && DB=pg jest --runInBand",
         "test:mysql": "DB=mysql ts-node ./test/Setup/build-test-client.ts --transpile-only && DB=mysql jest --runInBand",

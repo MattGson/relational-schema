@@ -7,31 +7,12 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from './styles.module.css';
 
 const features = [
-  {
+ {
     title: <>Maximise productivity</>,
     imageUrl: 'img/donut.svg',
     description: (
       <>
-          relational-schema auto-generates a Typescript client for your exact database schema.
-        Benefit from full type-safety and IDE auto-completion.
-      </>
-    ),
-  },
-  {
-    title: <>Optimized for GraphQL</>,
-    imageUrl: 'img/graphql.svg',
-    description: (
-      <>
-        relational-schema uses batching and caching (de-duplication) to minimise round trips to the database. This makes it perfect for building GraphQL APIs.
-      </>
-    ),
-  },
-  {
-    title: <>Flexible query API</>,
-    imageUrl: 'img/team.svg',
-    description: (
-      <>
-        relational-schema has an extensive and flexible query API including relation filtering. relational-schema isn't opinionated about how you build your app, it just helps you work with your data.
+          relational-schema auto-generates a JS friendly schema for your exact database.
       </>
     ),
   },
