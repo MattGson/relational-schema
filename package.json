@@ -22,7 +22,7 @@
         "prepare": "npm run build"
     },
     "bin": {
-        "relations": "build/src/Generator/cli/relational-schema.js"
+        "relations": "build/src/schema-generator/cli/entry.js"
     },
     "repository": {
         "type": "git",
