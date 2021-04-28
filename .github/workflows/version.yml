@@ -15,7 +15,11 @@ jobs:
       - uses: actions/setup-node@v2
       - run: npm ci
       - name: Create version
-        run: npm run create-version
+        run: |
+          git config --global user.name 'Matt Goodson'
+          git config --global user.email 'mattgson@users.noreply.github.com'
+          npm run create-version
+
       - name: Push version
         run: |
           git config --global user.name 'Matt Goodson'
