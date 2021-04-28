@@ -72,7 +72,7 @@ export class MySQLIntrospection implements Introspection {
             case 'varbinary':
             case 'bit':
                 return NonComparable.Buffer;
-            default:
+            default: {
                 const possibleEnum = MySQLIntrospection.getEnumName(tableName, columnName);
                 if (customTypes[possibleEnum]) {
                     return possibleEnum;
@@ -82,6 +82,7 @@ export class MySQLIntrospection implements Introspection {
                     );
                     return NonComparable.any;
                 }
+            }
         }
     }
 

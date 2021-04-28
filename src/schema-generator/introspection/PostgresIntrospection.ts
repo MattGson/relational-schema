@@ -78,7 +78,7 @@ export class PostgresIntrospection implements Introspection {
                 return NonComparable.ArrayObj;
             case '_timestamptz':
                 return NonComparable.ArrayDate;
-            default:
+            default: {
                 const possibleEnum = PostgresIntrospection.getEnumName(tableName, dbType);
                 if (customTypes[possibleEnum]) {
                     return possibleEnum;
@@ -88,6 +88,7 @@ export class PostgresIntrospection implements Introspection {
                     );
                     return NonComparable.any;
                 }
+            }
         }
     }
 
