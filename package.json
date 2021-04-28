@@ -20,7 +20,8 @@
         "test:pg": "DB=pg ts-node ./test/Setup/build-test-client.ts --transpile-only && DB=pg jest --runInBand",
         "test:mysql": "DB=mysql ts-node ./test/Setup/build-test-client.ts --transpile-only && DB=mysql jest --runInBand",
         "prepare": "npm run build",
-        "create-version": "standard-version"
+        "create-version": "standard-version",
+        "semantic-release": "semantic-release"
     },
     "bin": {
         "relations": "build/src/schema-generator/cli/entry.js"
@@ -35,6 +36,7 @@
     "author": "Matt Goodson <matt.goodson.business@gmail.com>",
     "license": "MIT",
     "devDependencies": {
+        "@semantic-release/git": "^9.0.0",
         "@types/faker": "^4.1.12",
         "@types/fs-extra": "^9.0.1",
         "@types/jest": "^26.0.7",
@@ -50,7 +52,7 @@
         "faker": "^4.1.0",
         "jest": "^24.7.0",
         "jest-extended": "^0.11.5",
-        "standard-version": "^9.2.0",
+        "semantic-release": "^17.4.2",
         "ts-jest": "^24.2.0",
         "ts-node": "^3.0.4"
     },

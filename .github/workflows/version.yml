@@ -1,53 +1,53 @@
-name: version
-on:
-  push:
-    paths-ignore:
-      - 'docs/**'
-    branches:
-      - main
-      - master
-
-jobs:
-  bump-version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - run: npm ci
-      - name: Create version
-        run: |
-          git config --global user.name 'Matt Goodson'
-          git config --global user.email 'mattgson@users.noreply.github.com'
-          npm run create-version
-
-      - name: Push version
-        run: |
-          git config --global user.name 'Matt Goodson'
-          git config --global user.email 'mattgson@users.noreply.github.com'
-          git push --follow-tags origin master
-
-
-#    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+#name: version
+#on:
+#  push:
+#    paths-ignore:
+#      - 'docs/**'
+#    branches:
+#      - main
+#      - master
+#
+#jobs:
+#  bump-version:
 #    runs-on: ubuntu-latest
-#    name: "Bump version and create changelog with commitizen"
 #    steps:
-#      - name: Check out
-#        uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 0
-#          token: "${{ secrets.GITHUB_TOKEN }}"
-#      - name: Create bump and changelog
-#        uses: commitizen-tools/commitizen-action@master
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-#    steps:
-#      - name: 'Automated Version Bump'
-#        uses: 'phips28/gh-action-bump-version@master'
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          PACKAGEJSON_DIR: './'
-#        with:
-#          tag-prefix: 'v'
-#          # make sure version commit doesn't trigger loop
-#          commit-message: 'CI: bumps version to {{version}} [skip ci]'
+#      - uses: actions/checkout@v2
+#      - uses: actions/setup-node@v2
+#      - run: npm ci
+#      - name: Create version
+#        run: |
+#          git config --global user.name 'Matt Goodson'
+#          git config --global user.email 'mattgson@users.noreply.github.com'
+#          npm run create-version
+#
+#      - name: Push version
+#        run: |
+#          git config --global user.name 'Matt Goodson'
+#          git config --global user.email 'mattgson@users.noreply.github.com'
+#          git push --follow-tags origin master
+#
+#
+##    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+##    runs-on: ubuntu-latest
+##    name: "Bump version and create changelog with commitizen"
+##    steps:
+##      - name: Check out
+##        uses: actions/checkout@v2
+##        with:
+##          fetch-depth: 0
+##          token: "${{ secrets.GITHUB_TOKEN }}"
+##      - name: Create bump and changelog
+##        uses: commitizen-tools/commitizen-action@master
+##        with:
+##          github_token: ${{ secrets.GITHUB_TOKEN }}
+#
+##    steps:
+##      - name: 'Automated Version Bump'
+##        uses: 'phips28/gh-action-bump-version@master'
+##        env:
+##          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+##          PACKAGEJSON_DIR: './'
+##        with:
+##          tag-prefix: 'v'
+##          # make sure version commit doesn't trigger loop
+##          commit-message: 'CI: bumps version to {{version}} [skip ci]'
