@@ -1,20 +1,20 @@
-name: version
+name: publish-actions
 on:
-  push:
-    paths-ignore:
-      - 'docs/**'
-    branches:
-      - main
-      - master
+  release:
+    types: [ created ]
 
 jobs:
-  bump-version:
+  npm-publish:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 'Automated Version Bump'
-        uses: 'phips28/gh-action-bump-version@master'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        # Setup .npmrc file to publish to npm
         with:
-          tag-prefix: 'v'
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm ci
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

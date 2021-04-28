@@ -1,0 +1,16 @@
+name: draft-release
+on:
+  push:
+    branches:
+      - main
+      - master
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - v**
+
+jobs:
+  create-draft:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
