@@ -5,6 +5,7 @@
 Steps to contribute:
 
 - Make your changes on a fork
+- Commit using [Commitizen](https://github.com/commitizen/cz-cli)
 - Run the tests
 - Submit pull a request
 

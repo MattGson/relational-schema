@@ -1,0 +1,478 @@
+{
+    "database": "tests",
+    "schema": "tests",
+    "generatedAt": "2021-04-21T09:19:29.298Z",
+    "tables": {
+        "posts": {
+            "primaryKey": { "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["post_id"] },
+            "keys": [
+                { "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["post_id"] },
+                {
+                    "constraintName": "posts_author_id_foreign",
+                    "constraintType": "FOREIGN KEY",
+                    "columnNames": ["author_id"]
+                },
+                {
+                    "constraintName": "posts_co_author_foreign",
+                    "constraintType": "FOREIGN KEY",
+                    "columnNames": ["co_author"]
+                }
+            ],
+            "uniqueKeyCombinations": [["post_id"]],
+            "nonUniqueKeyCombinations": [["author_id"], ["author_id", "co_author"], ["co_author"]],
+            "relations": [
+                {
+                    "toTable": "users",
+                    "alias": "author_",
+                    "joins": [{ "fromColumn": "author_id", "toColumn": "user_id" }],
+                    "type": "belongsTo"
+                },
+                {
+                    "toTable": "users",
+                    "alias": "co_author_",
+                    "joins": [{ "fromColumn": "co_author", "toColumn": "user_id" }],
+                    "type": "belongsTo"
+                },
+                {
+                    "toTable": "team_members",
+                    "alias": "team_members",
+                    "joins": [{ "fromColumn": "post_id", "toColumn": "member_post_id" }],
+                    "type": "hasMany"
+                }
+            ],
+            "columns": {
+                "post_id": {
+                    "dbType": "int",
+                    "columnDefault": "auto_increment",
+                    "nullable": false,
+                    "columnName": "post_id",
+                    "tsType": "number"
+                },
+                "author": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "author",
+                    "tsType": "string"
+                },
+                "author_id": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "author_id",
+                    "tsType": "number"
+                },
+                "co_author": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "co_author",
+                    "tsType": "number"
+                },
+                "message": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "message",
+                    "tsType": "string"
+                },
+                "rating_average": {
+                    "dbType": "float",
+                    "columnDefault": "0.00",
+                    "nullable": true,
+                    "columnName": "rating_average",
+                    "tsType": "number"
+                },
+                "created": {
+                    "dbType": "datetime",
+                    "columnDefault": "CURRENT_TIMESTAMP",
+                    "nullable": true,
+                    "columnName": "created",
+                    "tsType": "Date"
+                },
+                "deleted": {
+                    "dbType": "tinyint",
+                    "columnDefault": "0",
+                    "nullable": true,
+                    "columnName": "deleted",
+                    "tsType": "boolean"
+                }
+            },
+            "softDelete": {
+                "dbType": "tinyint",
+                "columnDefault": "0",
+                "nullable": true,
+                "columnName": "deleted",
+                "tsType": "boolean"
+            },
+            "enums": {}
+        },
+        "teams": {
+            "primaryKey": { "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["team_id"] },
+            "keys": [{ "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["team_id"] }],
+            "uniqueKeyCombinations": [["team_id"]],
+            "nonUniqueKeyCombinations": [],
+            "relations": [
+                {
+                    "toTable": "team_members",
+                    "alias": "team_members",
+                    "joins": [{ "fromColumn": "team_id", "toColumn": "team_id" }],
+                    "type": "hasMany"
+                }
+            ],
+            "columns": {
+                "team_id": {
+                    "dbType": "int",
+                    "columnDefault": "auto_increment",
+                    "nullable": false,
+                    "columnName": "team_id",
+                    "tsType": "number"
+                },
+                "name": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "name",
+                    "tsType": "string"
+                },
+                "deleted": {
+                    "dbType": "tinyint",
+                    "columnDefault": "0",
+                    "nullable": true,
+                    "columnName": "deleted",
+                    "tsType": "boolean"
+                }
+            },
+            "softDelete": {
+                "dbType": "tinyint",
+                "columnDefault": "0",
+                "nullable": true,
+                "columnName": "deleted",
+                "tsType": "boolean"
+            },
+            "enums": {}
+        },
+        "team_members": {
+            "primaryKey": {
+                "constraintName": "PRIMARY",
+                "constraintType": "PRIMARY KEY",
+                "columnNames": ["team_id", "user_id"]
+            },
+            "keys": [
+                { "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["team_id", "user_id"] },
+                {
+                    "constraintName": "team_members_member_post_id_foreign",
+                    "constraintType": "FOREIGN KEY",
+                    "columnNames": ["member_post_id"]
+                },
+                {
+                    "constraintName": "team_members_team_id_foreign",
+                    "constraintType": "FOREIGN KEY",
+                    "columnNames": ["team_id"]
+                },
+                {
+                    "constraintName": "team_members_user_id_foreign",
+                    "constraintType": "FOREIGN KEY",
+                    "columnNames": ["user_id"]
+                }
+            ],
+            "uniqueKeyCombinations": [["team_id", "user_id"]],
+            "nonUniqueKeyCombinations": [
+                ["team_id"],
+                ["user_id"],
+                ["member_post_id", "team_id"],
+                ["member_post_id", "user_id"],
+                ["member_post_id"]
+            ],
+            "relations": [
+                {
+                    "toTable": "posts",
+                    "alias": "member_post",
+                    "joins": [{ "fromColumn": "member_post_id", "toColumn": "post_id" }],
+                    "type": "belongsTo"
+                },
+                {
+                    "toTable": "teams",
+                    "alias": "team",
+                    "joins": [{ "fromColumn": "team_id", "toColumn": "team_id" }],
+                    "type": "belongsTo"
+                },
+                {
+                    "toTable": "users",
+                    "alias": "user",
+                    "joins": [{ "fromColumn": "user_id", "toColumn": "user_id" }],
+                    "type": "belongsTo"
+                },
+                {
+                    "toTable": "team_members_positions",
+                    "alias": "team_members_position",
+                    "joins": [
+                        { "fromColumn": "team_id", "toColumn": "team_id" },
+                        { "fromColumn": "user_id", "toColumn": "user_id" }
+                    ],
+                    "type": "hasOne"
+                }
+            ],
+            "columns": {
+                "team_id": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "team_id",
+                    "tsType": "number"
+                },
+                "user_id": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "user_id",
+                    "tsType": "number"
+                },
+                "member_post_id": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "member_post_id",
+                    "tsType": "number"
+                },
+                "deleted": {
+                    "dbType": "tinyint",
+                    "columnDefault": "0",
+                    "nullable": true,
+                    "columnName": "deleted",
+                    "tsType": "boolean"
+                }
+            },
+            "softDelete": {
+                "dbType": "tinyint",
+                "columnDefault": "0",
+                "nullable": true,
+                "columnName": "deleted",
+                "tsType": "boolean"
+            },
+            "enums": {}
+        },
+        "team_members_positions": {
+            "primaryKey": {
+                "constraintName": "PRIMARY",
+                "constraintType": "PRIMARY KEY",
+                "columnNames": ["team_id", "user_id"]
+            },
+            "keys": [
+                { "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["team_id", "user_id"] },
+                {
+                    "constraintName": "team_members_positions_position_manager_unique",
+                    "constraintType": "UNIQUE",
+                    "columnNames": ["manager", "position"]
+                },
+                {
+                    "constraintName": "team_members_positions_team_id_user_id_foreign",
+                    "constraintType": "FOREIGN KEY",
+                    "columnNames": ["team_id", "user_id"]
+                }
+            ],
+            "uniqueKeyCombinations": [
+                ["manager", "position"],
+                ["team_id", "user_id"]
+            ],
+            "nonUniqueKeyCombinations": [
+                ["team_id"],
+                ["user_id"],
+                ["manager", "team_id"],
+                ["manager", "user_id"],
+                ["position", "team_id"],
+                ["position", "user_id"],
+                ["manager"],
+                ["position"]
+            ],
+            "relations": [
+                {
+                    "toTable": "team_members",
+                    "alias": "team_member",
+                    "joins": [
+                        { "fromColumn": "team_id", "toColumn": "team_id" },
+                        { "fromColumn": "user_id", "toColumn": "user_id" }
+                    ],
+                    "type": "hasOne"
+                }
+            ],
+            "columns": {
+                "team_id": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "team_id",
+                    "tsType": "number"
+                },
+                "user_id": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "user_id",
+                    "tsType": "number"
+                },
+                "position": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "position",
+                    "tsType": "string"
+                },
+                "manager": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "manager",
+                    "tsType": "string"
+                },
+                "verified": {
+                    "dbType": "tinyint",
+                    "columnDefault": "0",
+                    "nullable": true,
+                    "columnName": "verified",
+                    "tsType": "boolean"
+                }
+            },
+            "softDelete": null,
+            "enums": {}
+        },
+        "users": {
+            "primaryKey": { "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["user_id"] },
+            "keys": [
+                { "constraintName": "PRIMARY", "constraintType": "PRIMARY KEY", "columnNames": ["user_id"] },
+                { "constraintName": "users_email_unique", "constraintType": "UNIQUE", "columnNames": ["email"] },
+                { "constraintName": "users_token_unique", "constraintType": "UNIQUE", "columnNames": ["token"] },
+                {
+                    "constraintName": "users_best_friend_id_foreign",
+                    "constraintType": "FOREIGN KEY",
+                    "columnNames": ["best_friend_id"]
+                }
+            ],
+            "uniqueKeyCombinations": [["email"], ["token"], ["user_id"]],
+            "nonUniqueKeyCombinations": [["best_friend_id"]],
+            "relations": [
+                {
+                    "toTable": "users",
+                    "alias": "best_friend",
+                    "joins": [{ "fromColumn": "best_friend_id", "toColumn": "user_id" }],
+                    "type": "belongsTo"
+                },
+                {
+                    "toTable": "posts",
+                    "alias": "author_posts",
+                    "joins": [{ "fromColumn": "user_id", "toColumn": "author_id" }],
+                    "type": "hasMany"
+                },
+                {
+                    "toTable": "posts",
+                    "alias": "co_author_posts",
+                    "joins": [{ "fromColumn": "user_id", "toColumn": "co_author" }],
+                    "type": "hasMany"
+                },
+                {
+                    "toTable": "team_members",
+                    "alias": "team_members",
+                    "joins": [{ "fromColumn": "user_id", "toColumn": "user_id" }],
+                    "type": "hasMany"
+                },
+                {
+                    "toTable": "users",
+                    "alias": "users",
+                    "joins": [{ "fromColumn": "user_id", "toColumn": "best_friend_id" }],
+                    "type": "hasMany"
+                }
+            ],
+            "columns": {
+                "user_id": {
+                    "dbType": "int",
+                    "columnDefault": "auto_increment",
+                    "nullable": false,
+                    "columnName": "user_id",
+                    "tsType": "number"
+                },
+                "best_friend_id": {
+                    "dbType": "int",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "best_friend_id",
+                    "tsType": "number"
+                },
+                "email": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "email",
+                    "tsType": "string"
+                },
+                "first_name": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "first_name",
+                    "tsType": "string"
+                },
+                "last_name": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "last_name",
+                    "tsType": "string"
+                },
+                "password": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": false,
+                    "columnName": "password",
+                    "tsType": "string"
+                },
+                "token": {
+                    "dbType": "varchar",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "token",
+                    "tsType": "string"
+                },
+                "permissions": {
+                    "dbType": "enum",
+                    "columnDefault": "USER",
+                    "nullable": true,
+                    "columnName": "permissions",
+                    "tsType": "users_permissions"
+                },
+                "subscription_level": {
+                    "dbType": "enum",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "subscription_level",
+                    "tsType": "users_subscription_level"
+                },
+                "deleted_at": {
+                    "dbType": "datetime",
+                    "columnDefault": null,
+                    "nullable": true,
+                    "columnName": "deleted_at",
+                    "tsType": "Date"
+                }
+            },
+            "softDelete": {
+                "dbType": "datetime",
+                "columnDefault": null,
+                "nullable": true,
+                "columnName": "deleted_at",
+                "tsType": "Date"
+            },
+            "enums": {
+                "users_permissions": {
+                    "columnName": "permissions",
+                    "enumName": "users_permissions",
+                    "values": ["ADMIN", "USER"]
+                },
+                "users_subscription_level": {
+                    "columnName": "subscription_level",
+                    "enumName": "users_subscription_level",
+                    "values": ["BRONZE", "GOLD", "SILVER"]
+                }
+            }
+        }
+    }
+}

@@ -2,6 +2,7 @@
 [![GitHub tag](https://img.shields.io/github/tag/MattGson/relational-schema.svg?style=for-the-badge)](https://github.com/MattGson/relational-schema)
 [![Github last commit][last-commit]][last-commit-link]
 [![Pull Requests Welcome][prs-badge]][prs-link]
+[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg?style=for-the-badge)](http://commitizen.github.io/cz-cli/)
 
 [last-commit]: https://img.shields.io/github/stars/MattGson/relational-schema.svg?style=for-the-badge&logo=github&logoColor=ffffff
 [last-commit-link]: https://github.com/MattGson/relational-schema/commits
