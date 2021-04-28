@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 0.1.4 (2021-04-28)
+
+
+### Bug Fixes
+
+* **ci:** fixes standard-version ([2b72fe3](https://github.com/MattGson/relational-schema/commit/2b72fe30ff85ef8891e92a1a813442956aa05684))
+
 ### 0.1.3 (2021-04-28)
 
 
