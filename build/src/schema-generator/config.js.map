@@ -1,0 +1,1 @@
+{"version":3,"file":"config.js","sourceRoot":"","sources":["../../../src/schema-generator/config.ts"],"names":[],"mappings":";;;AAAa,QAAA,QAAQ,GAAG;IACpB,IAAI,EAAE,IAAI;IACV,aAAa,EAAE,KAAK;IACpB,WAAW,EAAE,IAAI;IACjB,UAAU,EAAE,GAAG;IACf,QAAQ,EAAE,CAAC;CACd,CAAC;AAEW,QAAA,kBAAkB,GAAG;IAC9B,aAAa,EAAE,KAAK;CACvB,CAAC"}
