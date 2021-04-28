@@ -1,6 +1,6 @@
 {
     "name": "relational-schema",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Generate a js schema for a relational database",
     "keywords": [
         "postgres",
@@ -19,7 +19,8 @@
         "docker:stop": "docker-compose down",
         "test:pg": "DB=pg ts-node ./test/Setup/build-test-client.ts --transpile-only && DB=pg jest --runInBand",
         "test:mysql": "DB=mysql ts-node ./test/Setup/build-test-client.ts --transpile-only && DB=mysql jest --runInBand",
-        "prepare": "npm run build"
+        "prepare": "npm run build",
+        "changelog": "standard-version"
     },
     "bin": {
         "relations": "build/src/schema-generator/cli/entry.js"
