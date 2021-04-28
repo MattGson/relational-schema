@@ -1,4 +1,4 @@
-import { Connection, introspectSchema } from './Introspection';
+import { Connection, introspectSchema } from './introspection';
 import { writeJSFile, writeJSONFile, writeTypescriptFile } from './lib';
 
 // **************************

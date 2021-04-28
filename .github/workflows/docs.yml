@@ -1,0 +1,21 @@
+name: docs-actions
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  # Only run when docs are changed
+  push:
+    paths:
+      - 'docs/**'
+    branches:
+      - main
+      - master
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+      - run: cd docs
+      - run: npm ci
+      - run: npm run deploy
