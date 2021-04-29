@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/MattGson/relational-schema/compare/v0.2.0...v0.2.1) (2021-04-29)
+
+
+### Bug Fixes
+
+* **ci:** fixed docs ci flow ([546a29a](https://github.com/MattGson/relational-schema/commit/546a29a767208daa34dc3f73e363e3c6f239f4da))
+
 # [0.2.0](https://github.com/MattGson/relational-schema/compare/v0.1.8...v0.2.0) (2021-04-29)
 
 
