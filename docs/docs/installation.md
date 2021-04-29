@@ -40,7 +40,6 @@ For the `client` option you can choose between `mysql` and `pg`.
 You can optionally specify a `prettierConfig` which should be a path to a valid `prettierrc` file.
 This will be used to format the output files rather than the default formatting.
 
-
 ```json
 {
     "host": "127.0.0.1",
