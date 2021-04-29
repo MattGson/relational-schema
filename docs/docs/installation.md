@@ -3,7 +3,6 @@ id: installation
 title: Getting started
 sidebar_label: Getting started
 ---
-
 ## Installing
 
 ```

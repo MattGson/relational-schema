@@ -12,9 +12,6 @@
 
 * **ci:** fixed release config ([ce9f52b](https://github.com/MattGson/relational-schema/commit/ce9f52bf6319bba043ff18db71f8753e93e73440))
 
-# Changelog
-
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
 ### 0.1.4 (2021-04-28)
 
