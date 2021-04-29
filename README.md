@@ -11,10 +11,10 @@
 
 > **Easily work with relational databases in Javascript and Typescript**
 
-[relational-schema](https://mattgson.github.io/relational-schema/) is a utility package to generate a semantic,
-complete schema of a relational database (PostgreSQL, MySQL) in Javascript.
+[Relational-schema](https://mattgson.github.io/relational-schema/) is a utility package to generate a semantic,
+complete schema of a relational database (PostgreSQL, MySQL) in Javascript, JSON and other formats.
 
-relational-schema is built on top of trusted open-source projects:
+Relational-schema is built on top of trusted open-source projects:
 
 -   [Knex](https://github.com/knex/knex)
 
@@ -22,18 +22,18 @@ Works with MySQL and PostgreSQL. SQLite coming soon.
 
 Full docs [here](https://mattgson.github.io/relational-schema/)
 
-### Why relational-schema?
+### Why Relational-schema?
 
 One of the key benefits of working with relational databases is the strict schema.
 Often in our applications we fail to take advantage of this, instead we rely on handwritten simplifications
 such as ORM models.
 
-relational-schema gives TS/JS developers a complete database schema including some nice additions (see below for specs).
+Relational-schema gives TS/JS developers a complete database schema including some nice additions (see below for specs).
 The schema can be output in `json`, `es6`, `typescript` and `commonJS` to suit multiple use-cases.
 
 This schema can be used for building better, more automated tooling for working with relational databases in JS.
 
-Projects using relational-schema
+Projects using Relational-schema
 
 -   [Gybson](https://mattgson.github.io/Gybson) - an auto generated, typesafe, flexible query client for working with relational databases in typescript.
 

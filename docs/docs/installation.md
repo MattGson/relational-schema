@@ -12,7 +12,7 @@ npm i relational-schema
 
 ## Generating the schema
 
-Relational-schema generates js code from your database schema.
+Relational-schema generates code from your database schema.
 
 It does this by running queries against your database to work out the table schema as well as the relations between tables.
 
@@ -33,10 +33,12 @@ This should be inside of your project source so that the files are transpiled as
 
 Supported output formats:
 
--   `json`, `es6`, `typescript`, `commonJS`
+-   `json`, `es6`, `ts`, `cjs`
 
 For the `client` option you can choose between `mysql` and `pg`.
 
+You can optionally specify a `prettierConfig` which should be a path to a valid `prettierrc` file.
+This will be used to format the output files rather than the default formatting.
 
 ```json
 {
