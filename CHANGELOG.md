@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/MattGson/relational-schema/compare/v0.1.8...v0.2.0) (2021-04-29)
+
+
+### Features
+
+* **cli:** adds an optional prettierConfig argument ([d3c2bea](https://github.com/MattGson/relational-schema/commit/d3c2bea8da39fe3ed37b6c76e0704f8c2d59d062)), closes [#3](https://github.com/MattGson/relational-schema/issues/3)
+
 ## [0.1.8](https://github.com/MattGson/relational-schema/compare/v0.1.7...v0.1.8) (2021-04-28)
 
 
