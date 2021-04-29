@@ -23,4 +23,4 @@ jobs:
         run: npm run deploy
         working-directory: ./docs
         env:
-          GIT_USER: doc-bot
+          GIT_USER: mattgson
