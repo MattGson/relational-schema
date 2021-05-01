@@ -14,7 +14,6 @@ const clients: ReadonlyArray<client> = ['mysql', 'pg'];
 type format = Format;
 const formats: ReadonlyArray<format> = [Format.json, Format.commonJS, Format.es6, Format.typescript];
 
-
 const args = usage('Usage: $0 <command> [options]')
     .options({
         host: { type: 'string', default: '127.0.0.1' },
@@ -48,14 +47,14 @@ const run = async () => {
         };
         const outdir = args.outdir;
         const format = args.format;
-        const prettierConfig  = args.prettierConfig;
+        const prettierConfig = args.prettierConfig;
 
         const CURRENT = process.cwd();
         const GENERATED_DIR = path.join(CURRENT, outdir);
 
         await generate({ conn, outdir: GENERATED_DIR, format, prettierConfig });
     } catch (e) {
-        console.error(e.message);
+        console.error(e);
         console.log('Use: "relation -h" to see help');
         process.exit(1);
     }

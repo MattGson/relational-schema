@@ -1,19 +1,7 @@
-import {
-    ColumnDefinition,
-    ColumnType,
-    ConstraintDefinition,
-    EnumDefinition,
-    RelationDefinition,
-} from '../../types';
+import { ColumnDefinition, ColumnType, ConstraintDefinition, EnumDefinition, RelationDefinition } from '../../types';
 
-export interface Introspection {
-    getTableTypes(table: string, enumTypes: EnumDefinitions): Promise<TableColumnsDefinition>;
-    getTableConstraints(table: string): Promise<ConstraintDefinition[]>;
-    getForwardRelations(table: string): Promise<RelationDefinition[]>;
-    getBackwardRelations(table: string): Promise<RelationDefinition[]>;
-    getSchemaTables(): Promise<string[]>;
-    getEnumTypesForTable(table: string): Promise<EnumDefinitions>;
-    getTsTypeForColumn(tableName: string, columnName: string, dbType: string, customTypes: EnumDefinitions): ColumnType;
+export interface TableMap<T> {
+    [tableName: string]: T;
 }
 
 export interface TableColumnsDefinition {
@@ -22,4 +10,14 @@ export interface TableColumnsDefinition {
 
 export interface EnumDefinitions {
     [enumName: string]: EnumDefinition;
+}
+
+export interface Introspection {
+    getSchemaTables(): Promise<string[]>;
+    getEnumTypesForTables(tables: string[]): Promise<TableMap<EnumDefinitions>>;
+    getTableTypes(tables: string[], enumTypes: TableMap<EnumDefinitions>): Promise<TableMap<TableColumnsDefinition>>;
+    getTableConstraints(tables: string[]): Promise<TableMap<ConstraintDefinition[]>>;
+    getForwardRelations(tables: string[]): Promise<TableMap<RelationDefinition[]>>;
+    getBackwardRelations(tables: string[]): Promise<TableMap<RelationDefinition[]>>;
+    getTsTypeForColumn(tableName: string, columnName: string, dbType: string, customTypes: EnumDefinitions): ColumnType;
 }

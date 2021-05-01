@@ -1,19 +1,25 @@
-import { Introspection, TableColumnsDefinition } from './IntrospectionTypes';
-import { ColumnDefinition, Comparable, RelationDefinition, TableSchemaDefinition } from '../../types';
+import {
+    ColumnDefinition,
+    Comparable,
+    ConstraintDefinition,
+    RelationDefinition,
+    TableSchemaDefinition,
+} from '../../types';
 import { CardinalityResolver } from './CardinalityResolver';
-import _ from 'lodash';
+import { EnumDefinitions, TableColumnsDefinition, TableMap } from './IntrospectionTypes';
 
 /**
  * Build a js schema that describes the table and relationships
  */
 export class TableSchemaBuilder {
-    private readonly tableName: string;
-    private introspection: Introspection;
-
-    public constructor(tableName: string, introspection: Introspection) {
-        this.introspection = introspection;
-        this.tableName = tableName;
-    }
+    public constructor(
+        private tableName: string,
+        private enums: TableMap<EnumDefinitions>,
+        private tableDefinitions: TableMap<TableColumnsDefinition>,
+        private constraints: TableMap<ConstraintDefinition[]>,
+        private forwardRelations: TableMap<RelationDefinition[]>,
+        private backwardRelations: TableMap<RelationDefinition[]>,
+    ) {}
 
     /**
      * Format a forward relation (N - 1)
@@ -60,6 +66,7 @@ export class TableSchemaBuilder {
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
         relations: RelationDefinition[],
+        relatedTableConstraints: ConstraintDefinition[],
     ): Promise<RelationDefinition> {
         // check if table name will conflict with other relations on the same table
         let relationCount = 0;
@@ -71,7 +78,7 @@ export class TableSchemaBuilder {
         }
 
         // check if there is a unique constraint on the join. If so, it is (1 - 1);
-        const relatedTableConstraints = await this.introspection.getTableConstraints(relation.toTable);
+        // const relatedTableConstraints = await this.introspection.getTableConstraints(relation.toTable);
         const uniqueKeys = CardinalityResolver.getUniqueKeyCombinations(relatedTableConstraints);
 
         const joins = relation.joins.map((j) => j.toColumn).sort();
@@ -113,35 +120,37 @@ export class TableSchemaBuilder {
      * Get the schema definition for a table
      */
     public async buildTableDefinition(): Promise<TableSchemaDefinition> {
-        // columns
-        const enums = await this.introspection.getEnumTypesForTable(this.tableName);
-        const columns = await this.introspection.getTableTypes(this.tableName, enums);
-        const softDelete = TableSchemaBuilder.getSoftDeleteColumn(columns);
+        const tableConstraints = this.constraints[this.tableName];
+        const tableEnums = this.enums[this.tableName];
+        const tableColumns = this.tableDefinitions[this.tableName];
+        const tableForwardRelations = this.forwardRelations[this.tableName] ?? [];
+        const tableBackwardRelations = this.backwardRelations[this.tableName] ?? [];
+
+        const softDelete = TableSchemaBuilder.getSoftDeleteColumn(tableColumns);
 
         // constraints
-        const constraints = await this.introspection.getTableConstraints(this.tableName);
-        const uniqueKeyCombinations = CardinalityResolver.getUniqueKeyCombinations(constraints);
-        const nonUniqueKeyCombinations = CardinalityResolver.getNonUniqueKeyCombinations(constraints);
+        const uniqueKeyCombinations = CardinalityResolver.getUniqueKeyCombinations(tableConstraints);
 
         // relations
-        const forwardRelations = await this.introspection.getForwardRelations(this.tableName);
-        const backwardRelations = await this.introspection.getBackwardRelations(this.tableName);
         const forwardRels = await Promise.all(
-            forwardRelations.map((r) => this.formatForwardRelation(r, columns, uniqueKeyCombinations)),
+            tableForwardRelations.map((r) => this.formatForwardRelation(r, tableColumns, uniqueKeyCombinations)),
         );
+
         const backwardRels = await Promise.all(
-            backwardRelations.map((r) => this.formatBackwardRelationship(r, columns, backwardRelations)),
+            tableBackwardRelations.map((r) =>
+                this.formatBackwardRelationship(r, tableColumns, tableBackwardRelations, this.constraints[r.toTable]),
+            ),
         );
 
         return {
-            primaryKey: CardinalityResolver.primaryKey(constraints),
-            keys: constraints,
+            primaryKey: CardinalityResolver.primaryKey(tableConstraints),
+            keys: tableConstraints,
             uniqueKeyCombinations,
-            nonUniqueKeyCombinations,
+            nonUniqueKeyCombinations: [],
             relations: [...forwardRels, ...backwardRels],
-            columns,
+            columns: tableColumns,
             softDelete,
-            enums,
+            enums: tableEnums,
         };
     }
 }

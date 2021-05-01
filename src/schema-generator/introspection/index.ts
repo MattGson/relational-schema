@@ -1,6 +1,6 @@
 import Knex from 'knex';
 import { Introspection } from './IntrospectionTypes';
-import { MySQLIntrospection } from './MySQLIntrospection';
+// import { MySQLIntrospection } from './MySQLIntrospection';
 import { TableSchemaBuilder } from './TableSchemaBuilder';
 import { DatabaseSchema } from '../../types';
 import { PostgresIntrospection } from './PostgresIntrospection';
@@ -28,29 +28,58 @@ export interface Connection {
  */
 export const introspectSchema = async (params: { conn: Connection }): Promise<DatabaseSchema> => {
     const { conn } = params;
-    console.log(`Introspecting schema: ${conn.connection.database}`);
+
+    const { host, port, user, database, schema } = conn.connection;
+
+    console.log(`Introspecting schema: ${schema ?? database}`);
 
     const knex = Knex(conn);
     let DB: Introspection;
 
     if (conn.client === 'mysql') {
-        DB = new MySQLIntrospection(knex, conn.connection.database);
+        // DB = new MySQLIntrospection(knex, database);
+        DB = new PostgresIntrospection(knex);
+        // TODO:
     } else {
         DB = new PostgresIntrospection(knex);
     }
 
-    const schema: DatabaseSchema = {
-        database: conn.connection.database,
-        schema: conn.connection.schema ?? conn.connection.database,
+    const relationalSchema: DatabaseSchema = {
+        database: database,
+        schema: schema ?? database,
+        connection: {
+            host,
+            port,
+            user,
+        },
         generatedAt: new Date(),
         tables: {},
     };
-    const tables = await DB.getSchemaTables();
 
-    for (const table of tables) {
-        schema.tables[table] = await new TableSchemaBuilder(table, DB).buildTableDefinition();
+    try {
+        const tables = await DB.getSchemaTables();
+
+        const enums = await DB.getEnumTypesForTables(tables);
+        const definitions = await DB.getTableTypes(tables, enums);
+        const constraints = await DB.getTableConstraints(tables);
+        const forward = await DB.getForwardRelations(tables);
+        const backwards = await DB.getBackwardRelations(tables);
+
+        for (const table of tables) {
+            relationalSchema.tables[table] = await new TableSchemaBuilder(
+                table,
+                enums,
+                definitions,
+                constraints,
+                forward,
+                backwards,
+            ).buildTableDefinition();
+        }
+        await knex.destroy();
+    } catch (e) {
+        await knex.destroy();
+        throw e;
     }
-    await knex.destroy();
 
-    return schema;
+    return relationalSchema;
 };

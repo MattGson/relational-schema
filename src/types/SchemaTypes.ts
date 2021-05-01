@@ -52,6 +52,7 @@ export interface ColumnDefinition {
 }
 
 export interface EnumDefinition {
+    id?: string;
     columnName: string;
     enumName: string;
     values: string[];
@@ -83,8 +84,13 @@ export interface TableSchemaDefinition {
 export interface DatabaseSchema {
     database: string;
     schema: string;
+    connection: {
+        host: string;
+        port: string | number;
+        user: string;
+    };
     generatedAt: Date;
     tables: {
         [tableName: string]: TableSchemaDefinition;
-    }
+    };
 }

@@ -1,11 +1,5 @@
-import { EnumDefinitions, Introspection, TableColumnsDefinition } from './IntrospectionTypes';
-import {
-    ColumnType,
-    Comparable,
-    ConstraintDefinition,
-    NonComparable,
-    RelationDefinition,
-} from '../../types';
+import { EnumDefinitions, Introspection, TableColumnsDefinition, TableMap } from './IntrospectionTypes';
+import { ColumnType, Comparable, ConstraintDefinition, NonComparable, RelationDefinition } from '../../types';
 import _ from 'lodash';
 import Knex = require('knex');
 
@@ -20,7 +14,7 @@ export class PostgresIntrospection implements Introspection {
     }
 
     public getTsTypeForColumn(
-        tableName: string,
+        _tableName: string,
         columnName: string,
         dbType: string,
         customTypes: EnumDefinitions,
@@ -79,9 +73,8 @@ export class PostgresIntrospection implements Introspection {
             case '_timestamptz':
                 return NonComparable.ArrayDate;
             default: {
-                const possibleEnum = PostgresIntrospection.getEnumName(tableName, dbType);
-                if (customTypes[possibleEnum]) {
-                    return possibleEnum;
+                if (customTypes[dbType]) {
+                    return dbType;
                 } else {
                     console.log(
                         `Type [${columnName}] has been mapped to [any] because no specific type has been found.`,
@@ -92,84 +85,103 @@ export class PostgresIntrospection implements Introspection {
         }
     }
 
-    /**
-     * Get name of enum
-     * @param tableName
-     * @param enumName
-     */
-    private static getEnumName(tableName: string, enumName: string): string {
-        return `${tableName}_${enumName}`;
-    }
-
     // TODO:- need to support native enums and allowed values ideally
     /**
+     * TODO:- PG enums are global so this just adds them for each table for now
      * Get the enum types used by a table
-     * @param tableName
+     * @param tables
      */
-    public async getEnumTypesForTable(tableName: string): Promise<EnumDefinitions> {
+    public async getEnumTypesForTables(tables: string[]): Promise<TableMap<EnumDefinitions>> {
         type rowType = {
             enum_name: string;
             value: string;
             oid: number;
         };
-        const result = await this.knex.raw(`
+        const result: { rows: rowType[] } = await this.knex.raw(`
             select t.typname as enum_name, e.enumlabel as value, t.oid 
             from pg_type t
             inner join pg_enum e ON (t.oid = e.enumtypid) 
-            inner join pg_catalog.pg_namespace n ON (n.oid = t.typnamespace) 
+            left join pg_catalog.pg_namespace n ON (n.oid = t.typnamespace) 
             where n.nspname = '${this.schemaName}';
         `);
 
-        const rows: rowType[] = result.rows;
-        const enumRows = _.groupBy(rows, (r) => r.oid);
+        const reconciled: TableMap<rowType[]> = tables.reduce((acc: any, val) => {
+            acc[val] = result.rows;
+            return acc;
+        }, {});
 
-        let enums: EnumDefinitions = {};
-        for (let [oid, values] of Object.entries(enumRows)) {
-            const [{ enum_name }] = values;
-            const enumName = PostgresIntrospection.getEnumName(tableName, enum_name);
-            enums[enumName] = {
-                enumName,
-                values: values.map((v) => v.value).sort(),
-                columnName: '', // TODO:- how to link to table? info schema udt_name ?
-            };
-        }
-        return enums;
+        const results: TableMap<EnumDefinitions> = {};
+
+        Object.entries(reconciled).forEach(([table, rows]) => {
+            // const rows: rowType[] = result.rows;
+            const enumRows = _.groupBy(rows, (r) => r.oid);
+
+            const enums: EnumDefinitions = {};
+            for (const [oid, values] of Object.entries(enumRows)) {
+                const [{ enum_name }] = values;
+                enums[enum_name] = {
+                    id: oid,
+                    enumName: enum_name,
+                    values: values.map((v) => v.value).sort(),
+                    columnName: '', // TODO:- how to link to table? info schema udt_name ?
+                };
+            }
+            results[table] = enums;
+        });
+        return results;
     }
 
     /**
      * Get the type definition for a table
-     * @param tableName
+     * @param tables
      * @param enumTypes
      */
-    public async getTableTypes(tableName: string, enumTypes: EnumDefinitions): Promise<TableColumnsDefinition> {
-        let tableDefinition: TableColumnsDefinition = {};
+    public async getTableTypes(
+        tables: string[],
+        enumTypes: TableMap<EnumDefinitions>,
+    ): Promise<TableMap<TableColumnsDefinition>> {
+        const rows = await this.knex('information_schema.columns')
+            .select('table_name', 'column_name', 'udt_name', 'is_nullable', 'column_default')
+            .where({ table_schema: this.schemaName })
+            .whereIn('table_name', tables);
 
-        const tableColumns = await this.knex('information_schema.columns')
-            .select('column_name', 'udt_name', 'is_nullable', 'column_default')
-            .where({ table_name: tableName, table_schema: this.schemaName });
+        const reconciled = _.groupBy(rows, (r) => r.table_name);
 
-        tableColumns.map(
-            (schemaItem: {
-                column_name: string;
-                udt_name: string;
-                is_nullable: string;
-                column_default: string | null;
-            }) => {
-                const columnName = schemaItem.column_name;
-                const dbType = schemaItem.udt_name;
-                tableDefinition[columnName] = {
-                    dbType,
-                    columnDefault: schemaItem.column_default,
-                    nullable: schemaItem.is_nullable === 'YES',
-                    columnName,
-                    tsType: this.getTsTypeForColumn(tableName, columnName, dbType, enumTypes),
-                };
-            },
-        );
-        return tableDefinition;
+        const results: TableMap<TableColumnsDefinition> = {};
+
+        Object.entries(reconciled).forEach(([table, rows]) => {
+            const tableDefinition: TableColumnsDefinition = {};
+
+            rows.map(
+                (schemaItem: {
+                    column_name: string;
+                    udt_name: string;
+                    is_nullable: string;
+                    column_default: string | null;
+                }) => {
+                    const columnName = schemaItem.column_name;
+                    const dbType = schemaItem.udt_name;
+                    tableDefinition[columnName] = {
+                        dbType,
+                        columnDefault: schemaItem.column_default,
+                        nullable: schemaItem.is_nullable === 'YES',
+                        columnName,
+                        tsType: this.getTsTypeForColumn(table, columnName, dbType, enumTypes[table]),
+                    };
+                },
+            );
+            results[table] = tableDefinition;
+        });
+        return results;
     }
 
-    public async getTableConstraints(tableName: string): Promise<ConstraintDefinition[]> {
+    /**
+     * Get constraints for tables
+     * Bulk operation across many tables
+     * @param tables
+     * @returns
+     */
+    public async getTableConstraints(tables: string[]): Promise<TableMap<ConstraintDefinition[]>> {
         const rows = await this.knex('information_schema.key_column_usage as key_usage')
             .select(
                 'key_usage.table_name',
@@ -183,33 +195,41 @@ export class PostgresIntrospection implements Introspection {
                 this.andOn('key_usage.constraint_schema', '=', 'constraints.constraint_schema');
                 this.andOn('key_usage.table_name', '=', 'constraints.table_name');
             })
+            .where({ 'key_usage.table_schema': this.schemaName })
+            .whereIn('key_usage.table_name', tables);
 
-            .where({ 'key_usage.table_name': tableName, 'key_usage.table_schema': this.schemaName });
+        const reconciled = _.groupBy(rows, (r) => r.table_name);
 
-        // group by constraint name
-        const columnMap = _.groupBy(rows, (k) => k.constraint_name);
-        const constraintMap = _.keyBy(rows, (k) => k.constraint_name);
+        const results: TableMap<ConstraintDefinition[]> = {};
 
-        const constraintDefinitions: ConstraintDefinition[] = [];
+        Object.entries(reconciled).forEach(([table, rows]) => {
+            // group by constraint name
+            const columnMap = _.groupBy(rows, (k) => k.constraint_name);
+            const constraintMap = _.keyBy(rows, (k) => k.constraint_name);
 
-        Object.values(constraintMap).forEach((constraint) => {
-            const { constraint_type, constraint_name } = constraint;
-            const columns = columnMap[constraint_name];
+            const constraintDefinitions: ConstraintDefinition[] = [];
 
-            constraintDefinitions.push({
-                constraintName: constraint_name,
-                constraintType: constraint_type,
-                columnNames: columns.map((c) => c.column_name).sort(),
+            Object.values(constraintMap).forEach((constraint) => {
+                const { constraint_type, constraint_name } = constraint;
+                const columns = columnMap[constraint_name];
+
+                constraintDefinitions.push({
+                    constraintName: constraint_name,
+                    constraintType: constraint_type,
+                    columnNames: columns.map((c) => c.column_name).sort(),
+                });
             });
+            results[table] = constraintDefinitions;
         });
-        return constraintDefinitions;
+
+        return results;
     }
 
     /**
      * Get all relations where the given table holds the constraint (N - 1 or 1 - 1) i.e. Posts.user_id -> Users.user_id
-     * @param tableName
+     * @param tables
      */
-    public async getForwardRelations(tableName: string): Promise<RelationDefinition[]> {
+    public async getForwardRelations(tables: string[]): Promise<TableMap<RelationDefinition[]>> {
         type rowType = {
             constraint_name: string;
             table_name: string;
@@ -225,41 +245,49 @@ export class PostgresIntrospection implements Introspection {
                 , y.table_name as referenced_table_name
                 , y.column_name as referenced_column_name
             from information_schema.referential_constraints c
-            join information_schema.key_column_usage x
+            left join information_schema.key_column_usage x
                 on x.constraint_name = c.constraint_name
-            join information_schema.key_column_usage y
+            left join information_schema.key_column_usage y
                 on y.ordinal_position = x.position_in_unique_constraint
                 and y.constraint_name = c.unique_constraint_name
-            WHERE x.table_name = '${tableName}'
+            WHERE x.table_name IN (${tables.map((t) => `'${t}'`).join(',')})
             order by c.constraint_name, x.ordinal_position
         `);
 
-        // group by constraint name to capture multiple relations to same table
-        let relations: { [constraintName: string]: RelationDefinition } = {};
-        result.rows.forEach((row) => {
-            const { column_name, referenced_table_name, referenced_column_name, constraint_name } = row;
-            if (referenced_table_name == null || referenced_column_name == null) return;
+        const reconciled = _.groupBy(result.rows, (r) => r.table_name);
 
-            if (!relations[constraint_name])
-                relations[constraint_name] = {
-                    toTable: referenced_table_name,
-                    alias: referenced_table_name,
-                    joins: [],
-                    type: 'belongsTo', // default always N - 1
-                };
-            relations[constraint_name].joins.push({
-                fromColumn: column_name,
-                toColumn: referenced_column_name,
+        const results: TableMap<RelationDefinition[]> = {};
+
+        Object.entries(reconciled).forEach(([table, rows]) => {
+            // group by constraint name to capture multiple relations to same table
+            const relations: { [constraintName: string]: RelationDefinition } = {};
+            rows.forEach((row) => {
+                const { column_name, referenced_table_name, referenced_column_name, constraint_name } = row;
+                if (referenced_table_name == null || referenced_column_name == null) return;
+
+                if (!relations[constraint_name])
+                    relations[constraint_name] = {
+                        toTable: referenced_table_name,
+                        alias: referenced_table_name,
+                        joins: [],
+                        type: 'belongsTo', // default always N - 1
+                    };
+                relations[constraint_name].joins.push({
+                    fromColumn: column_name,
+                    toColumn: referenced_column_name,
+                });
             });
+            results[table] = Object.values(relations);
         });
-        return Object.values(relations);
+
+        return results;
     }
 
     /**
      * Get all relations where the given table does not hold the constraint (1 - N or 1 - 1) i.e. Users.user_id <- Posts.author_id
-     * @param tableName
+     * @param tables
      */
-    public async getBackwardRelations(tableName: string): Promise<RelationDefinition[]> {
+    public async getBackwardRelations(tables: string[]): Promise<TableMap<RelationDefinition[]>> {
         type rowType = {
             constraint_name: string;
             table_name: string;
@@ -275,34 +303,42 @@ export class PostgresIntrospection implements Introspection {
                 , y.table_name as referenced_table_name
                 , y.column_name as referenced_column_name
             from information_schema.referential_constraints c
-            join information_schema.key_column_usage x
+            left join information_schema.key_column_usage x
                 on x.constraint_name = c.constraint_name
-            join information_schema.key_column_usage y
+            left join information_schema.key_column_usage y
                 on y.ordinal_position = x.position_in_unique_constraint
                 and y.constraint_name = c.unique_constraint_name
-            WHERE y.table_name = '${tableName}'
+            WHERE y.table_name IN (${tables.map((t) => `'${t}'`).join(',')})
             order by c.constraint_name, x.ordinal_position
         `);
 
-        // group by constraint name to capture multiple relations to same table
-        let relations: { [constraintName: string]: RelationDefinition } = {};
-        result.rows.forEach((row) => {
-            const { column_name, table_name, referenced_column_name, constraint_name } = row;
-            if (table_name == null || column_name == null) return;
+        const reconciled = _.groupBy(result.rows, (r) => r.referenced_table_name);
 
-            if (!relations[constraint_name])
-                relations[constraint_name] = {
-                    toTable: table_name,
-                    alias: table_name,
-                    joins: [],
-                    type: 'hasMany', // default always 1 - N
-                };
-            relations[constraint_name].joins.push({
-                fromColumn: referenced_column_name,
-                toColumn: column_name,
+        const results: TableMap<RelationDefinition[]> = {};
+
+        Object.entries(reconciled).forEach(([table, rows]) => {
+            // group by constraint name to capture multiple relations to same table
+            const relations: { [constraintName: string]: RelationDefinition } = {};
+            rows.forEach((row) => {
+                const { column_name, table_name, referenced_column_name, constraint_name } = row;
+                if (table_name == null || column_name == null) return;
+
+                if (!relations[constraint_name])
+                    relations[constraint_name] = {
+                        toTable: table_name,
+                        alias: table_name,
+                        joins: [],
+                        type: 'hasMany', // default always 1 - N
+                    };
+                relations[constraint_name].joins.push({
+                    fromColumn: referenced_column_name,
+                    toColumn: column_name,
+                });
             });
+            results[table] = Object.values(relations);
         });
-        return Object.values(relations);
+
+        return results;
     }
 
     /**

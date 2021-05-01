@@ -72,6 +72,6 @@ export async function generate(args: {
             });
     }
 
-    console.log(`Generated for ${Object.keys(schema).length} tables in ${outdir}`);
+    console.log(`Generated for ${Object.keys(schema.tables).length} tables in ${outdir}`);
     return conn;
 }
