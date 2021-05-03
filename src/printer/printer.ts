@@ -1,8 +1,8 @@
 import fs from 'fs-extra';
 // @ts-ignore
 import { format as prettify } from 'prettier';
-import { Format } from '../index';
 import { join } from 'path';
+import { Format } from '../types';
 
 const prettierDefault = {
     semi: true,
@@ -35,7 +35,7 @@ export async function writeFormattedFile(args: {
     content: string;
     format: Format;
     prettierConfig?: string;
-}) {
+}): Promise<void> {
     const { filename, directory, content, format, prettierConfig } = args;
 
     let fileHeader = `

@@ -1,33 +1,15 @@
 import Knex from 'knex';
-import { Introspection } from './IntrospectionTypes';
+import { Connection, DatabaseSchema, Introspection, LogLevel } from '../types';
+import { PostgresIntrospection } from './postgres-introspection';
 // import { MySQLIntrospection } from './MySQLIntrospection';
-import { TableSchemaBuilder } from './TableSchemaBuilder';
-import { DatabaseSchema } from '../../types';
-import { PostgresIntrospection } from './PostgresIntrospection';
-
-export interface Connection {
-    client: 'mysql' | 'pg';
-    connection: {
-        host: string;
-        port: number;
-        user: string;
-        password: string;
-        database: string;
-        schema?: string;
-        multipleStatements?: boolean;
-    };
-    pool?: {
-        min: number;
-        max: number;
-    };
-}
+import { TableSchemaBuilder } from './table-schema-builder';
 
 /**
  * Build schema from database connection
  * @param params
  */
-export const introspectSchema = async (params: { conn: Connection }): Promise<DatabaseSchema> => {
-    const { conn } = params;
+export const introspectSchema = async (params: { conn: Connection; logLevel?: LogLevel }): Promise<DatabaseSchema> => {
+    const { conn, logLevel } = params;
 
     const { host, port, user, database, schema } = conn.connection;
 
@@ -38,15 +20,15 @@ export const introspectSchema = async (params: { conn: Connection }): Promise<Da
 
     if (conn.client === 'mysql') {
         // DB = new MySQLIntrospection(knex, database);
-        DB = new PostgresIntrospection(knex);
+        DB = new PostgresIntrospection({ knex, schemaName: schema, logLevel: logLevel ?? LogLevel.info });
         // TODO:
     } else {
-        DB = new PostgresIntrospection(knex);
+        DB = new PostgresIntrospection({ knex, schemaName: schema, logLevel: logLevel ?? LogLevel.info });
     }
 
     const relationalSchema: DatabaseSchema = {
         database: database,
-        schema: schema ?? database,
+        schema: schema ?? undefined,
         connection: {
             host,
             port,
@@ -58,7 +40,6 @@ export const introspectSchema = async (params: { conn: Connection }): Promise<Da
 
     try {
         const tables = await DB.getSchemaTables();
-
         const enums = await DB.getEnumTypesForTables(tables);
         const definitions = await DB.getTableTypes(tables, enums);
         const constraints = await DB.getTableConstraints(tables);
@@ -75,6 +56,7 @@ export const introspectSchema = async (params: { conn: Connection }): Promise<Da
                 backwards,
             ).buildTableDefinition();
         }
+
         await knex.destroy();
     } catch (e) {
         await knex.destroy();

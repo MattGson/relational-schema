@@ -2,11 +2,13 @@ import {
     ColumnDefinition,
     Comparable,
     ConstraintDefinition,
+    EnumDefinitions,
     RelationDefinition,
+    TableColumnsDefinition,
+    TableMap,
     TableSchemaDefinition,
-} from '../../types';
-import { CardinalityResolver } from './CardinalityResolver';
-import { EnumDefinitions, TableColumnsDefinition, TableMap } from './IntrospectionTypes';
+} from '../types';
+import { CardinalityResolver } from './cardinality-resolver';
 
 /**
  * Build a js schema that describes the table and relationships
@@ -122,6 +124,8 @@ export class TableSchemaBuilder {
     public async buildTableDefinition(): Promise<TableSchemaDefinition> {
         const tableConstraints = this.constraints[this.tableName];
         const tableEnums = this.enums[this.tableName];
+
+        // console.log(tableEnums);
         const tableColumns = this.tableDefinitions[this.tableName];
         const tableForwardRelations = this.forwardRelations[this.tableName] ?? [];
         const tableBackwardRelations = this.backwardRelations[this.tableName] ?? [];

@@ -1,16 +1,29 @@
-import { EnumDefinitions, Introspection, TableColumnsDefinition, TableMap } from './IntrospectionTypes';
-import { ColumnType, Comparable, ConstraintDefinition, NonComparable, RelationDefinition } from '../../types';
 import _ from 'lodash';
+import {
+    ColumnType,
+    Comparable,
+    ConstraintDefinition,
+    EnumDefinitions,
+    Introspection,
+    LogLevel,
+    NonComparable,
+    RelationDefinition,
+    TableColumnsDefinition,
+    TableMap,
+} from '../types';
 import Knex = require('knex');
 
 export class PostgresIntrospection implements Introspection {
     private readonly schemaName: string;
     private knex: Knex;
+    private logLevel: LogLevel;
 
-    public constructor(knex: Knex, schemaName?: string) {
+    public constructor(params: { knex: Knex; schemaName?: string; logLevel: LogLevel }) {
+        const { knex, schemaName, logLevel } = params;
         this.knex = knex;
         if (schemaName) this.schemaName = schemaName;
         else this.schemaName = 'public';
+        this.logLevel = logLevel;
     }
 
     public getTsTypeForColumn(
@@ -73,7 +86,7 @@ export class PostgresIntrospection implements Introspection {
             case '_timestamptz':
                 return NonComparable.ArrayDate;
             default: {
-                if (customTypes[dbType]) {
+                if (customTypes && customTypes[dbType]) {
                     return dbType;
                 } else {
                     console.log(
@@ -85,9 +98,15 @@ export class PostgresIntrospection implements Introspection {
         }
     }
 
+    private async query(query: Knex.QueryBuilder) {
+        if (this.logLevel === LogLevel.debug) {
+            console.log('Executing query: ', query.toSQL());
+        }
+        return await query;
+    }
+
     // TODO:- need to support native enums and allowed values ideally
     /**
-     * TODO:- PG enums are global so this just adds them for each table for now
      * Get the enum types used by a table
      * @param tables
      */
@@ -96,24 +115,23 @@ export class PostgresIntrospection implements Introspection {
             enum_name: string;
             value: string;
             oid: number;
+            table_name: string;
         };
-        const result: { rows: rowType[] } = await this.knex.raw(`
-            select t.typname as enum_name, e.enumlabel as value, t.oid 
-            from pg_type t
-            inner join pg_enum e ON (t.oid = e.enumtypid) 
-            left join pg_catalog.pg_namespace n ON (n.oid = t.typnamespace) 
-            where n.nspname = '${this.schemaName}';
-        `);
+        const rows: rowType[] = await this.query(
+            this.knex('pg_type as t')
+                .select('t.typname as enum_name', 'e.enumlabel as value', 't.oid', 'c.table_name')
+                .join('pg_enum  as e', 't.oid', '=', 'e.enumtypid')
+                .leftJoin('pg_catalog.pg_namespace as n', 'n.oid', '=', 't.typnamespace')
+                .leftJoin('information_schema.columns as c', 'c.udt_name', '=', 't.typname')
+                .where({ 'n.nspname': this.schemaName, table_schema: this.schemaName })
+                .whereIn('c.table_name', tables),
+        );
 
-        const reconciled: TableMap<rowType[]> = tables.reduce((acc: any, val) => {
-            acc[val] = result.rows;
-            return acc;
-        }, {});
+        const reconciled = _.groupBy(rows, (r) => r.table_name);
 
         const results: TableMap<EnumDefinitions> = {};
 
         Object.entries(reconciled).forEach(([table, rows]) => {
-            // const rows: rowType[] = result.rows;
             const enumRows = _.groupBy(rows, (r) => r.oid);
 
             const enums: EnumDefinitions = {};
@@ -123,11 +141,11 @@ export class PostgresIntrospection implements Introspection {
                     id: oid,
                     enumName: enum_name,
                     values: values.map((v) => v.value).sort(),
-                    columnName: '', // TODO:- how to link to table? info schema udt_name ?
                 };
             }
             results[table] = enums;
         });
+
         return results;
     }
 
@@ -140,10 +158,12 @@ export class PostgresIntrospection implements Introspection {
         tables: string[],
         enumTypes: TableMap<EnumDefinitions>,
     ): Promise<TableMap<TableColumnsDefinition>> {
-        const rows = await this.knex('information_schema.columns')
-            .select('table_name', 'column_name', 'udt_name', 'is_nullable', 'column_default')
-            .where({ table_schema: this.schemaName })
-            .whereIn('table_name', tables);
+        const rows = await this.query(
+            this.knex('information_schema.columns')
+                .select('table_name', 'column_name', 'udt_name', 'is_nullable', 'column_default')
+                .where({ table_schema: this.schemaName })
+                .whereIn('table_name', tables),
+        );
 
         const reconciled = _.groupBy(rows, (r) => r.table_name);
 
@@ -182,21 +202,23 @@ export class PostgresIntrospection implements Introspection {
      * @returns
      */
     public async getTableConstraints(tables: string[]): Promise<TableMap<ConstraintDefinition[]>> {
-        const rows = await this.knex('information_schema.key_column_usage as key_usage')
-            .select(
-                'key_usage.table_name',
-                'key_usage.column_name',
-                'key_usage.constraint_name',
-                'constraints.constraint_type',
-            )
-            .distinct()
-            .leftJoin('information_schema.table_constraints as constraints', function () {
-                this.on('key_usage.constraint_name', '=', 'constraints.constraint_name');
-                this.andOn('key_usage.constraint_schema', '=', 'constraints.constraint_schema');
-                this.andOn('key_usage.table_name', '=', 'constraints.table_name');
-            })
-            .where({ 'key_usage.table_schema': this.schemaName })
-            .whereIn('key_usage.table_name', tables);
+        const rows = await this.query(
+            this.knex('information_schema.key_column_usage as key_usage')
+                .select(
+                    'key_usage.table_name',
+                    'key_usage.column_name',
+                    'key_usage.constraint_name',
+                    'constraints.constraint_type',
+                )
+                .distinct()
+                .leftJoin('information_schema.table_constraints as constraints', function () {
+                    this.on('key_usage.constraint_name', '=', 'constraints.constraint_name');
+                    this.andOn('key_usage.constraint_schema', '=', 'constraints.constraint_schema');
+                    this.andOn('key_usage.table_name', '=', 'constraints.table_name');
+                })
+                .where({ 'key_usage.table_schema': this.schemaName })
+                .whereIn('key_usage.table_name', tables),
+        );
 
         const reconciled = _.groupBy(rows, (r) => r.table_name);
 
@@ -238,23 +260,27 @@ export class PostgresIntrospection implements Introspection {
             referenced_column_name: string;
         };
 
-        const result: { rows: rowType[] } = await this.knex.raw(`
-            select c.constraint_name
-                , x.table_name
-                , x.column_name
-                , y.table_name as referenced_table_name
-                , y.column_name as referenced_column_name
-            from information_schema.referential_constraints c
-            left join information_schema.key_column_usage x
-                on x.constraint_name = c.constraint_name
-            left join information_schema.key_column_usage y
-                on y.ordinal_position = x.position_in_unique_constraint
-                and y.constraint_name = c.unique_constraint_name
-            WHERE x.table_name IN (${tables.map((t) => `'${t}'`).join(',')})
-            order by c.constraint_name, x.ordinal_position
-        `);
+        const rows: rowType[] = await this.query(
+            this.knex('information_schema.referential_constraints as c')
+                .join('information_schema.key_column_usage as x', 'x.constraint_name', '=', 'c.constraint_name')
+                .join('information_schema.key_column_usage as y', function (q) {
+                    q.on('y.ordinal_position', '=', 'x.position_in_unique_constraint').andOn(
+                        'y.constraint_name',
+                        '=',
+                        'c.unique_constraint_name',
+                    );
+                })
+                .whereIn('x.table_name', tables)
+                .select(
+                    ' x.table_name',
+                    'x.column_name',
+                    'y.table_name as referenced_table_name',
+                    'y.column_name as referenced_column_name',
+                )
+                .orderBy('c.constraint_name', 'x.ordinal_position'),
+        );
 
-        const reconciled = _.groupBy(result.rows, (r) => r.table_name);
+        const reconciled = _.groupBy(rows, (r) => r.table_name);
 
         const results: TableMap<RelationDefinition[]> = {};
 
@@ -296,23 +322,27 @@ export class PostgresIntrospection implements Introspection {
             referenced_column_name: string;
         };
 
-        const result: { rows: rowType[] } = await this.knex.raw(`
-            select c.constraint_name
-                , x.table_name
-                , x.column_name
-                , y.table_name as referenced_table_name
-                , y.column_name as referenced_column_name
-            from information_schema.referential_constraints c
-            left join information_schema.key_column_usage x
-                on x.constraint_name = c.constraint_name
-            left join information_schema.key_column_usage y
-                on y.ordinal_position = x.position_in_unique_constraint
-                and y.constraint_name = c.unique_constraint_name
-            WHERE y.table_name IN (${tables.map((t) => `'${t}'`).join(',')})
-            order by c.constraint_name, x.ordinal_position
-        `);
+        const rows: rowType[] = await this.query(
+            this.knex('information_schema.referential_constraints as c')
+                .join('information_schema.key_column_usage as x', 'x.constraint_name', '=', 'c.constraint_name')
+                .join('information_schema.key_column_usage as y', function (q) {
+                    q.on('y.ordinal_position', '=', 'x.position_in_unique_constraint').andOn(
+                        'y.constraint_name',
+                        '=',
+                        'c.unique_constraint_name',
+                    );
+                })
+                .whereIn('y.table_name', tables)
+                .select(
+                    ' x.table_name',
+                    'x.column_name',
+                    'y.table_name as referenced_table_name',
+                    'y.column_name as referenced_column_name',
+                )
+                .orderBy('c.constraint_name', 'x.ordinal_position'),
+        );
 
-        const reconciled = _.groupBy(result.rows, (r) => r.referenced_table_name);
+        const reconciled = _.groupBy(rows, (r) => r.referenced_table_name);
 
         const results: TableMap<RelationDefinition[]> = {};
 
@@ -345,10 +375,12 @@ export class PostgresIntrospection implements Introspection {
      * Get a list of all table names in schema
      */
     public async getSchemaTables(): Promise<string[]> {
-        const schemaTables = await this.knex('information_schema.columns')
-            .select('table_name')
-            .where({ table_schema: this.schemaName })
-            .groupBy('table_name');
+        const schemaTables = await this.query(
+            this.knex('information_schema.columns')
+                .select('table_name')
+                .where({ table_schema: this.schemaName })
+                .groupBy('table_name'),
+        );
 
         return schemaTables.map((schemaItem: { table_name: string }) => schemaItem.table_name);
     }

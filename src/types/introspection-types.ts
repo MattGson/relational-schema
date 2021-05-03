@@ -1,4 +1,4 @@
-import { ColumnDefinition, ColumnType, ConstraintDefinition, EnumDefinition, RelationDefinition } from '../../types';
+import { ColumnDefinition, ColumnType, ConstraintDefinition, EnumDefinition, RelationDefinition } from './schema-types';
 
 export interface TableMap<T> {
     [tableName: string]: T;

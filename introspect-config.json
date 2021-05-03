@@ -6,6 +6,7 @@
     "password": "",
     "database": "partly",
     "schema": "public",
-    "outdir": "./",
-    "format": "cjs"
+    "outdir": "test/Gen",
+    "format": "cjs",
+    "logLevel": "debug"
 }

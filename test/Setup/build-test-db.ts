@@ -1,6 +1,6 @@
 import Knex from 'knex';
 import { migrateDb } from './migrate-db';
-import { Connection } from '../../src/schema-generator/introspection';
+import { Connection } from 'src/types';
 import { Connection as PGConn } from 'pg';
 import { Connection as MySQLConn } from 'promise-mysql';
 import { DB } from './test.env';

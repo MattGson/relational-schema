@@ -1,16 +1,10 @@
-import { Connection, introspectSchema } from './introspection';
-import { writeFormattedFile } from './lib';
+import { Connection, Format, LogLevel } from './types';
+import { introspectSchema } from './introspection/introspect';
+import { writeFormattedFile } from './printer';
 
 // **************************
 // generate schema
 // **************************
-
-export const enum Format {
-    json = 'json',
-    es6 = 'es6',
-    typescript = 'ts',
-    commonJS = 'cjs',
-}
 
 /**
  * Generate the schema
@@ -21,11 +15,12 @@ export async function generate(args: {
     outdir: string;
     format: Format;
     prettierConfig?: string;
+    logLevel: LogLevel;
 }): Promise<Connection> {
-    const { conn, outdir, format, prettierConfig } = args;
+    const { conn, outdir, format, prettierConfig, logLevel } = args;
     console.log(`Generating schema for db: ${conn.connection.database}`);
 
-    const schema = await introspectSchema({ conn });
+    const schema = await introspectSchema({ conn, logLevel });
 
     switch (format) {
         case Format.es6:

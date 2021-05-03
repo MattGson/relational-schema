@@ -1,5 +1,5 @@
-import { MySQLIntrospection } from '../../src/schema-generator/introspection/MySQLIntrospection';
-import { PostgresIntrospection } from '../../src/schema-generator/introspection/PostgresIntrospection';
+import { PostgresIntrospection } from 'src/introspection';
+import { Introspection, LogLevel } from 'src/types';
 
 export const DB = (): 'mysql' | 'pg' => {
     const db = process.env.DB;
@@ -7,9 +7,9 @@ export const DB = (): 'mysql' | 'pg' => {
     return db;
 };
 
-export const getIntrospection = (knex: any, schema?: string) => {
+export const getIntrospection = (knex: any, schema?: string): Introspection => {
     if (DB() === 'mysql') {
-        return new MySQLIntrospection(knex, schema);
+        // return new MySQLIntrospection(knex, schema);
     }
-    return new PostgresIntrospection(knex);
+    return new PostgresIntrospection({ knex, schemaName: schema, logLevel: LogLevel.info });
 };
