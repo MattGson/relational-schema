@@ -1,12 +1,12 @@
 import 'jest-extended';
 import { CardinalityResolver } from 'src/introspection';
 import { Introspection } from 'src/introspection/introspection';
-import { closeConnection, getIntrospection, knex, schemaName } from 'test/setup';
+import { closeConnection, getIntrospection, knex, openConnection, schemaName } from 'test/setup';
 
 describe('CardinalityResolver', () => {
     let intro: Introspection;
     beforeAll(async () => {
-        // await buildDBSchemas();
+        await openConnection();
         intro = getIntrospection(knex(), schemaName);
     });
     afterAll(async () => {
@@ -19,8 +19,8 @@ describe('CardinalityResolver', () => {
             expect(primary).toEqual(expect.objectContaining({ columnNames: ['user_id'] }));
         });
         it('Returns the compound primary key from a set of keys', async () => {
-            const keys = await intro.getTableConstraints(['team_members']);
-            const primary = CardinalityResolver.primaryKey(keys['users']);
+            const { team_members: constraints } = await intro.getTableConstraints(['team_members']);
+            const primary = CardinalityResolver.primaryKey(constraints);
             expect(primary).toEqual(expect.objectContaining({ columnNames: ['team_id', 'user_id'] }));
         });
     });
