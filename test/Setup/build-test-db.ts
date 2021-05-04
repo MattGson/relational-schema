@@ -46,25 +46,20 @@ export const closePoolConnection = async (connection: PoolConnection): Promise<v
 export const knex = (): Knex => state.knex;
 export const closeConnection = async (): Promise<void> => state.knex.destroy();
 
-export const openConnection = async (): Promise<Knex> => {
+export const openConnection = async (): Promise<ConnectionConfig> => {
     if (DB() === 'pg') {
         state.knex = Knex(pgConnection);
-        return state.knex;
+        return pgConnection;
     }
     if (DB() === 'mysql') {
         state.knex = Knex(mysqlConnection);
-        return state.knex;
+        return mysqlConnection;
     }
     throw new Error('No db specified while opening connection');
 };
 
 export const buildDBSchemas = async (): Promise<ConnectionConfig> => {
-    if (!knex()) {
-        await openConnection();
-    }
-
+    const conn = await openConnection();
     await migrateDb(state.knex, DB() === 'pg');
-    return pgConnection;
-
-    throw new Error('No db specified');
+    return conn;
 };

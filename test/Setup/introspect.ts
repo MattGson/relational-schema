@@ -3,7 +3,7 @@ import { Format, LogLevel } from 'src/types';
 import { buildDBSchemas, closeConnection } from './build-test-db';
 import path from 'path';
 
-const outdir = path.join(__dirname, '../Gen');
+const outdir = path.join(__dirname, '../gen');
 
 // Warning - this executes immediately - do not import elsewhere
 // build a db and relational-schema output for testing in every format

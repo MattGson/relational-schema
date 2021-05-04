@@ -18,7 +18,7 @@ export async function generate(args: {
     logLevel: LogLevel;
 }): Promise<ConnectionConfig> {
     const { conn, outdir, format, prettierConfig, logLevel } = args;
-    console.log(`Generating for db: ${conn.connection.database}`);
+    console.log(`Generating for db: ${conn.client} - ${conn.connection.database}`);
 
     const schema = await introspectSchema({ conn, logLevel });
 

@@ -121,8 +121,6 @@ export class PostgresIntrospection extends Introspection {
                 .whereIn('c.table_name', tables),
         );
 
-        // const reconciled = _.groupBy(rows, (r) => r.table_name);
-
         const results: TableMap<EnumDefinitions> = {};
 
         this.tableMap(rows, (table, rows) => {
