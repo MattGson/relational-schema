@@ -27,9 +27,9 @@ const args = usage('Usage: $0 <command> [options]')
         password: { type: 'string', default: '' },
         database: { type: 'string', default: 'public' },
         outdir: { type: 'string', default: './gen' },
-        format: { choices: formats, default: formats[0] },
+        format: { choices: formats, default: Format.json },
         prettierConfig: { type: 'string' },
-        logLevel: { choices: logLevels, default: logLevels[0] },
+        logLevel: { choices: logLevels, default: LogLevel.info },
     })
     .global('config')
     .default('config', 'introspect-config.json')

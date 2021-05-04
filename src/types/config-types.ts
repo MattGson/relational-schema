@@ -5,7 +5,7 @@ export const enum Format {
     commonJS = 'cjs',
 }
 
-export interface Connection {
+export interface ConnectionConfig {
     client: 'mysql' | 'pg';
     connection: {
         host: string;

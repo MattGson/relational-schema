@@ -1,4 +1,4 @@
-import { Connection, Format, LogLevel } from './types';
+import { ConnectionConfig, Format, LogLevel } from './types';
 import { introspectSchema } from './introspection/introspect';
 import { writeFormattedFile } from './printer';
 
@@ -11,14 +11,14 @@ import { writeFormattedFile } from './printer';
  * @param args
  */
 export async function generate(args: {
-    conn: Connection;
+    conn: ConnectionConfig;
     outdir: string;
     format: Format;
     prettierConfig?: string;
     logLevel: LogLevel;
-}): Promise<Connection> {
+}): Promise<ConnectionConfig> {
     const { conn, outdir, format, prettierConfig, logLevel } = args;
-    console.log(`Generating schema for db: ${conn.connection.database}`);
+    console.log(`Generating for db: ${conn.connection.database}`);
 
     const schema = await introspectSchema({ conn, logLevel });
 

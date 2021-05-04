@@ -23,7 +23,6 @@
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
         "paths": {
-            "src/*": ["./src/*"],
             "test/*": ["./test/*"]
         }
     }

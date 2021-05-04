@@ -1,12 +1,12 @@
 import 'jest-extended';
 import { CardinalityResolver } from 'src/introspection';
-import { Introspection } from 'src/types';
-import { buildDBSchemas, closeConnection, getIntrospection, knex, schemaName } from 'test/setup';
+import { Introspection } from 'src/introspection/introspection';
+import { closeConnection, getIntrospection, knex, schemaName } from 'test/setup';
 
 describe('CardinalityResolver', () => {
     let intro: Introspection;
     beforeAll(async () => {
-        await buildDBSchemas();
+        // await buildDBSchemas();
         intro = getIntrospection(knex(), schemaName);
     });
     afterAll(async () => {

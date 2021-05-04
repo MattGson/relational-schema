@@ -12,6 +12,20 @@ const prettierDefault = {
     tabWidth: 4,
 };
 
+const formatExtension = {
+    [Format.json]: 'json',
+    [Format.es6]: 'js',
+    [Format.commonJS]: 'js',
+    [Format.typescript]: 'ts',
+};
+
+const formatParser = {
+    [Format.json]: 'json',
+    [Format.es6]: 'babel',
+    [Format.commonJS]: 'babel',
+    [Format.typescript]: 'typescript',
+};
+
 function getPrettierConfig(file?: string) {
     let config: any;
     if (file?.endsWith('.js')) {
@@ -45,11 +59,8 @@ export async function writeFormattedFile(args: {
     `;
 
     if (format === Format.json) fileHeader = '';
-
-    const extension =
-        format === Format.es6 ? 'js' : format === Format.commonJS ? 'js' : format === Format.typescript ? 'ts' : 'json';
-
-    const parser = format === Format.typescript ? 'typescript' : format === Format.json ? 'json' : undefined;
+    const extension = formatExtension[format];
+    const parser = formatParser[format];
 
     const out = join(directory, filename + '.' + extension);
 

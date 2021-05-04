@@ -32,11 +32,11 @@ export class TableSchemaBuilder {
      * @param columns
      * @param uniqueKeys
      */
-    private async formatForwardRelation(
+    private formatForwardRelation(
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
         uniqueKeys: string[][],
-    ): Promise<RelationDefinition> {
+    ): RelationDefinition {
         // multiple columns so use the table-name instead
         if (relation.joins.length > 1) {
             relation.alias = relation.toTable.replace(/s+$/, '');
@@ -64,15 +64,15 @@ export class TableSchemaBuilder {
      * @param columns
      * @param relations, other relations
      */
-    private async formatBackwardRelationship(
+    private formatBackwardRelationship(
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
         relations: RelationDefinition[],
         relatedTableConstraints: ConstraintDefinition[],
-    ): Promise<RelationDefinition> {
+    ): RelationDefinition {
         // check if table name will conflict with other relations on the same table
         let relationCount = 0;
-        for (let other_relation of relations) {
+        for (const other_relation of relations) {
             if (other_relation.toTable === relation.toTable) relationCount += 1;
         }
         if (relationCount > 1) {
@@ -105,12 +105,8 @@ export class TableSchemaBuilder {
      */
     private static getSoftDeleteColumn(columns: TableColumnsDefinition): ColumnDefinition | null {
         let candidate: ColumnDefinition | undefined;
-        for (let column of Object.values(columns)) {
-            if (
-                column.columnName === 'deleted' ||
-                column.columnName === 'deleted_at' ||
-                column.columnName === 'deletedAt'
-            ) {
+        for (const column of Object.values(columns)) {
+            if (['deleted', 'deleted_at', 'deletedAt', 'soft_deleted', 'softDeleted'].includes(column.columnName)) {
                 candidate = column;
             }
         }
@@ -121,11 +117,10 @@ export class TableSchemaBuilder {
     /**
      * Get the schema definition for a table
      */
-    public async buildTableDefinition(): Promise<TableSchemaDefinition> {
+    public buildTableDefinition(): TableSchemaDefinition {
         const tableConstraints = this.constraints[this.tableName];
         const tableEnums = this.enums[this.tableName];
 
-        // console.log(tableEnums);
         const tableColumns = this.tableDefinitions[this.tableName];
         const tableForwardRelations = this.forwardRelations[this.tableName] ?? [];
         const tableBackwardRelations = this.backwardRelations[this.tableName] ?? [];
@@ -136,14 +131,12 @@ export class TableSchemaBuilder {
         const uniqueKeyCombinations = CardinalityResolver.getUniqueKeyCombinations(tableConstraints);
 
         // relations
-        const forwardRels = await Promise.all(
-            tableForwardRelations.map((r) => this.formatForwardRelation(r, tableColumns, uniqueKeyCombinations)),
+        const forwardRels = tableForwardRelations.map((r) =>
+            this.formatForwardRelation(r, tableColumns, uniqueKeyCombinations),
         );
 
-        const backwardRels = await Promise.all(
-            tableBackwardRelations.map((r) =>
-                this.formatBackwardRelationship(r, tableColumns, tableBackwardRelations, this.constraints[r.toTable]),
-            ),
+        const backwardRels = tableBackwardRelations.map((r) =>
+            this.formatBackwardRelationship(r, tableColumns, tableBackwardRelations, this.constraints[r.toTable]),
         );
 
         return {

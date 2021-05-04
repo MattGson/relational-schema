@@ -1,13 +1,13 @@
 import Knex from 'knex';
 import { migrateDb } from './migrate-db';
-import { Connection } from 'src/types';
+import { ConnectionConfig } from 'src/types';
 import { Connection as PGConn } from 'pg';
 import { Connection as MySQLConn } from 'promise-mysql';
 import { DB } from './test.env';
 type PoolConnection = PGConn | MySQLConn;
 
 export const schemaName = 'tests';
-export const mysqlConnection: Connection = {
+export const mysqlConnection: ConnectionConfig = {
     client: 'mysql',
     connection: {
         host: 'localhost',
@@ -19,7 +19,7 @@ export const mysqlConnection: Connection = {
     },
 };
 
-export const pgConnection: Connection = {
+export const pgConnection: ConnectionConfig = {
     client: 'pg',
     connection: {
         host: 'localhost',
@@ -27,6 +27,7 @@ export const pgConnection: Connection = {
         user: 'postgres',
         password: '',
         database: schemaName,
+        schema: 'public',
     },
     pool: {
         min: 2,
@@ -39,22 +40,31 @@ const state: any = {
 };
 
 // helpers for testing manual connection handling
-export const closePoolConnection = async (connection: PoolConnection) =>
+export const closePoolConnection = async (connection: PoolConnection): Promise<void> =>
     state.knex.client.releaseConnection(connection);
 
 export const knex = (): Knex => state.knex;
-export const closeConnection = async () => state.knex.destroy();
+export const closeConnection = async (): Promise<void> => state.knex.destroy();
 
-export const buildDBSchemas = async (): Promise<Connection> => {
+export const openConnection = async (): Promise<Knex> => {
     if (DB() === 'pg') {
         state.knex = Knex(pgConnection);
-        await migrateDb(state.knex, true);
-        return pgConnection;
+        return state.knex;
     }
     if (DB() === 'mysql') {
         state.knex = Knex(mysqlConnection);
-        await migrateDb(state.knex, false);
-        return mysqlConnection;
+        return state.knex;
     }
+    throw new Error('No db specified while opening connection');
+};
+
+export const buildDBSchemas = async (): Promise<ConnectionConfig> => {
+    if (!knex()) {
+        await openConnection();
+    }
+
+    await migrateDb(state.knex, DB() === 'pg');
+    return pgConnection;
+
     throw new Error('No db specified');
 };

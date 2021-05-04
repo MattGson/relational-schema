@@ -3,8 +3,8 @@ import {
     ColumnType,
     Comparable,
     ConstraintDefinition,
+    ConstraintType,
     EnumDefinitions,
-    Introspection,
     LogLevel,
     NonComparable,
     RelationDefinition,
@@ -12,13 +12,15 @@ import {
     TableMap,
 } from '../types';
 import Knex = require('knex');
+import { Introspection } from './introspection';
 
-export class PostgresIntrospection implements Introspection {
-    private readonly schemaName: string;
+export class PostgresIntrospection extends Introspection {
+    protected readonly schemaName: string;
     private knex: Knex;
-    private logLevel: LogLevel;
+    protected logLevel: LogLevel;
 
     public constructor(params: { knex: Knex; schemaName?: string; logLevel: LogLevel }) {
+        super();
         const { knex, schemaName, logLevel } = params;
         this.knex = knex;
         if (schemaName) this.schemaName = schemaName;
@@ -98,14 +100,6 @@ export class PostgresIntrospection implements Introspection {
         }
     }
 
-    private async query(query: Knex.QueryBuilder) {
-        if (this.logLevel === LogLevel.debug) {
-            console.log('Executing query: ', query.toSQL());
-        }
-        return await query;
-    }
-
-    // TODO:- need to support native enums and allowed values ideally
     /**
      * Get the enum types used by a table
      * @param tables
@@ -127,11 +121,11 @@ export class PostgresIntrospection implements Introspection {
                 .whereIn('c.table_name', tables),
         );
 
-        const reconciled = _.groupBy(rows, (r) => r.table_name);
+        // const reconciled = _.groupBy(rows, (r) => r.table_name);
 
         const results: TableMap<EnumDefinitions> = {};
 
-        Object.entries(reconciled).forEach(([table, rows]) => {
+        this.tableMap(rows, (table, rows) => {
             const enumRows = _.groupBy(rows, (r) => r.oid);
 
             const enums: EnumDefinitions = {};
@@ -158,38 +152,37 @@ export class PostgresIntrospection implements Introspection {
         tables: string[],
         enumTypes: TableMap<EnumDefinitions>,
     ): Promise<TableMap<TableColumnsDefinition>> {
-        const rows = await this.query(
+        type RowType = {
+            table_name: string;
+            column_name: string;
+            udt_name: string;
+            is_nullable: string;
+            column_default: string | null;
+        };
+
+        const rows: RowType[] = await this.query(
             this.knex('information_schema.columns')
                 .select('table_name', 'column_name', 'udt_name', 'is_nullable', 'column_default')
                 .where({ table_schema: this.schemaName })
                 .whereIn('table_name', tables),
         );
 
-        const reconciled = _.groupBy(rows, (r) => r.table_name);
-
         const results: TableMap<TableColumnsDefinition> = {};
 
-        Object.entries(reconciled).forEach(([table, rows]) => {
+        this.tableMap(rows, (table, rows) => {
             const tableDefinition: TableColumnsDefinition = {};
 
-            rows.map(
-                (schemaItem: {
-                    column_name: string;
-                    udt_name: string;
-                    is_nullable: string;
-                    column_default: string | null;
-                }) => {
-                    const columnName = schemaItem.column_name;
-                    const dbType = schemaItem.udt_name;
-                    tableDefinition[columnName] = {
-                        dbType,
-                        columnDefault: schemaItem.column_default,
-                        nullable: schemaItem.is_nullable === 'YES',
-                        columnName,
-                        tsType: this.getTsTypeForColumn(table, columnName, dbType, enumTypes[table]),
-                    };
-                },
-            );
+            rows.map((schemaItem) => {
+                const columnName = schemaItem.column_name;
+                const dbType = schemaItem.udt_name;
+                tableDefinition[columnName] = {
+                    dbType,
+                    columnDefault: schemaItem.column_default,
+                    nullable: schemaItem.is_nullable === 'YES',
+                    columnName,
+                    tsType: this.getTsTypeForColumn(table, columnName, dbType, enumTypes[table]),
+                };
+            });
             results[table] = tableDefinition;
         });
         return results;
@@ -202,7 +195,14 @@ export class PostgresIntrospection implements Introspection {
      * @returns
      */
     public async getTableConstraints(tables: string[]): Promise<TableMap<ConstraintDefinition[]>> {
-        const rows = await this.query(
+        type RowType = {
+            table_name: string;
+            column_name: string;
+            constraint_name: string;
+            constraint_type: ConstraintType;
+        };
+
+        const rows: RowType[] = await this.query(
             this.knex('information_schema.key_column_usage as key_usage')
                 .select(
                     'key_usage.table_name',
@@ -220,11 +220,9 @@ export class PostgresIntrospection implements Introspection {
                 .whereIn('key_usage.table_name', tables),
         );
 
-        const reconciled = _.groupBy(rows, (r) => r.table_name);
-
         const results: TableMap<ConstraintDefinition[]> = {};
 
-        Object.entries(reconciled).forEach(([table, rows]) => {
+        this.tableMap(rows, (table, rows) => {
             // group by constraint name
             const columnMap = _.groupBy(rows, (k) => k.constraint_name);
             const constraintMap = _.keyBy(rows, (k) => k.constraint_name);
@@ -272,7 +270,8 @@ export class PostgresIntrospection implements Introspection {
                 })
                 .whereIn('x.table_name', tables)
                 .select(
-                    ' x.table_name',
+                    'x.constraint_name',
+                    'x.table_name',
                     'x.column_name',
                     'y.table_name as referenced_table_name',
                     'y.column_name as referenced_column_name',
@@ -280,11 +279,9 @@ export class PostgresIntrospection implements Introspection {
                 .orderBy('c.constraint_name', 'x.ordinal_position'),
         );
 
-        const reconciled = _.groupBy(rows, (r) => r.table_name);
-
         const results: TableMap<RelationDefinition[]> = {};
 
-        Object.entries(reconciled).forEach(([table, rows]) => {
+        this.tableMap(rows, (table, rows) => {
             // group by constraint name to capture multiple relations to same table
             const relations: { [constraintName: string]: RelationDefinition } = {};
             rows.forEach((row) => {
@@ -334,29 +331,28 @@ export class PostgresIntrospection implements Introspection {
                 })
                 .whereIn('y.table_name', tables)
                 .select(
-                    ' x.table_name',
-                    'x.column_name',
-                    'y.table_name as referenced_table_name',
-                    'y.column_name as referenced_column_name',
+                    'x.constraint_name',
+                    'x.table_name as referenced_table_name',
+                    'x.column_name as referenced_column_name',
+                    'y.table_name ',
+                    'y.column_name',
                 )
                 .orderBy('c.constraint_name', 'x.ordinal_position'),
         );
 
-        const reconciled = _.groupBy(rows, (r) => r.referenced_table_name);
-
         const results: TableMap<RelationDefinition[]> = {};
 
-        Object.entries(reconciled).forEach(([table, rows]) => {
+        this.tableMap(rows, (table, rows) => {
             // group by constraint name to capture multiple relations to same table
             const relations: { [constraintName: string]: RelationDefinition } = {};
             rows.forEach((row) => {
-                const { column_name, table_name, referenced_column_name, constraint_name } = row;
+                const { column_name, table_name, referenced_column_name, referenced_table_name, constraint_name } = row;
                 if (table_name == null || column_name == null) return;
 
                 if (!relations[constraint_name])
                     relations[constraint_name] = {
-                        toTable: table_name,
-                        alias: table_name,
+                        toTable: referenced_table_name,
+                        alias: referenced_table_name,
                         joins: [],
                         type: 'hasMany', // default always 1 - N
                     };

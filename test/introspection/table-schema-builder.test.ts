@@ -1,14 +1,8 @@
 import 'jest-extended';
 import { TableSchemaBuilder } from 'src/introspection';
-import {
-    ConstraintDefinition,
-    EnumDefinitions,
-    Introspection,
-    RelationDefinition,
-    TableColumnsDefinition,
-    TableMap,
-} from 'src/types';
-import { buildDBSchemas, closeConnection, DB, getIntrospection, itif, knex, schemaName } from 'test/setup';
+import { Introspection } from 'src/introspection/introspection';
+import { ConstraintDefinition, EnumDefinitions, RelationDefinition, TableColumnsDefinition, TableMap } from 'src/types';
+import { closeConnection, DB, getIntrospection, itif, knex, schemaName } from 'test/setup';
 
 describe('TableSchemaBuilder', () => {
     let tables;
@@ -20,7 +14,7 @@ describe('TableSchemaBuilder', () => {
     let intro: Introspection;
     beforeAll(
         async (): Promise<void> => {
-            await buildDBSchemas();
+            // await buildDBSchemas();
 
             intro = getIntrospection(knex(), schemaName);
             tables = await intro.getSchemaTables();

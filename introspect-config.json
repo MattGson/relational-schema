@@ -4,9 +4,8 @@
     "port": 5432,
     "user": "postgres",
     "password": "",
-    "database": "partly",
+    "database": "tests",
     "schema": "public",
-    "outdir": "test/Gen",
-    "format": "cjs",
-    "logLevel": "debug"
+    "outdir": "test/gen",
+    "format": "cjs"
 }

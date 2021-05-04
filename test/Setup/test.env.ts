@@ -1,5 +1,7 @@
+import Knex from 'knex';
 import { PostgresIntrospection } from 'src/introspection';
-import { Introspection, LogLevel } from 'src/types';
+import { Introspection } from 'src/introspection/introspection';
+import { LogLevel } from 'src/types';
 
 export const DB = (): 'mysql' | 'pg' => {
     const db = process.env.DB;
@@ -7,7 +9,7 @@ export const DB = (): 'mysql' | 'pg' => {
     return db;
 };
 
-export const getIntrospection = (knex: any, schema?: string): Introspection => {
+export const getIntrospection = (knex: Knex, schema?: string): Introspection => {
     if (DB() === 'mysql') {
         // return new MySQLIntrospection(knex, schema);
     }
