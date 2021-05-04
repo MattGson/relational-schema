@@ -70,7 +70,6 @@ export interface TableSchemaDefinition {
     primaryKey?: ConstraintDefinition;
     keys: ConstraintDefinition[];
     uniqueKeyCombinations: string[][];
-    nonUniqueKeyCombinations: string[][];
     columns: {
         [columnName: string]: ColumnDefinition;
     };

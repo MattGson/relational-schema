@@ -143,7 +143,6 @@ export class TableSchemaBuilder {
             primaryKey: CardinalityResolver.primaryKey(tableConstraints),
             keys: tableConstraints,
             uniqueKeyCombinations,
-            nonUniqueKeyCombinations: [],
             relations: [...forwardRels, ...backwardRels],
             columns: tableColumns,
             softDelete,

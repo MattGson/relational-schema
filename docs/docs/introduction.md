@@ -56,15 +56,14 @@ Create a config file `introspect-config.json`
 
 ```json
 {
-  "host": "127.0.0.1",
-  "port": 3306,
-  "user": "root",
-  "password": "secure",
-  "database": "mydb",
-  "outdir": "src/schemas",
-  "format": "json"
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "secure",
+    "database": "mydb",
+    "outdir": "src/schemas",
+    "format": "json"
 }
-
 ```
 
 ```
@@ -73,25 +72,22 @@ relational-schema introspect
 
 The schema will be generated in `outdir` in the chosen format.
 
-
-
 ---
 
 ### Key features:
 
 #### Full table definitions including:
 
-- columns (names, types, default values, nullability...)
-- keys and constraints
-- unique-ness
-- Typescript type mappings
-- table relations (including direction)
-- human readable relation alias'
-- soft-delete idenfication
-- enums
+-   columns (names, types, default values, nullability...)
+-   keys and constraints
+-   unique-ness
+-   Typescript type mappings
+-   table relations (including direction)
+-   human readable relation alias'
+-   soft-delete idenfication
+-   enums
 
 ---
-
 
 ### Example output:
 
@@ -109,7 +105,6 @@ The schema will be generated in `outdir` in the chosen format.
             },
             "keys": [{ "constraintName": "teams_pkey", "constraintType": "PRIMARY KEY", "columnNames": ["team_id"] }],
             "uniqueKeyCombinations": [["team_id"]],
-            "nonUniqueKeyCombinations": [],
             "relations": [
                 {
                     "toTable": "team_members",
@@ -186,13 +181,6 @@ The schema will be generated in `outdir` in the chosen format.
                 }
             ],
             "uniqueKeyCombinations": [["team_id", "user_id"]],
-            "nonUniqueKeyCombinations": [
-                ["member_post_id"],
-                ["member_post_id", "team_id"],
-                ["member_post_id", "user_id"],
-                ["team_id"],
-                ["user_id"]
-            ],
             "relations": [
                 {
                     "toTable": "posts",
@@ -299,16 +287,6 @@ The schema will be generated in `outdir` in the chosen format.
                 ["manager", "position"],
                 ["team_id", "user_id"]
             ],
-            "nonUniqueKeyCombinations": [
-                ["manager"],
-                ["position"],
-                ["manager", "team_id"],
-                ["position", "team_id"],
-                ["manager", "user_id"],
-                ["position", "user_id"],
-                ["team_id"],
-                ["user_id"]
-            ],
             "relations": [
                 {
                     "toTable": "team_members",
@@ -388,7 +366,6 @@ The schema will be generated in `outdir` in the chosen format.
                 { "constraintName": "users_pkey", "constraintType": "PRIMARY KEY", "columnNames": ["user_id"] }
             ],
             "uniqueKeyCombinations": [["email"], ["token"], ["user_id"]],
-            "nonUniqueKeyCombinations": [["best_friend_id"]],
             "relations": [
                 {
                     "toTable": "users",
@@ -529,7 +506,6 @@ The schema will be generated in `outdir` in the chosen format.
                 { "constraintName": "posts_pkey", "constraintType": "PRIMARY KEY", "columnNames": ["post_id"] }
             ],
             "uniqueKeyCombinations": [["post_id"]],
-            "nonUniqueKeyCombinations": [["author_id"], ["author_id", "co_author"], ["co_author"]],
             "relations": [
                 {
                     "toTable": "users",
@@ -626,6 +602,4 @@ The schema will be generated in `outdir` in the chosen format.
         }
     }
 }
-
-
 ```
