@@ -4,9 +4,10 @@
  * Created by Matt Goodson
  */
 
-import { usage } from 'yargs';
 import path from 'path';
-import { Format, generate } from '../index';
+import { usage } from 'yargs';
+import { generate } from '../index';
+import { Format, LogLevel } from '../types';
 
 type client = 'mysql' | 'pg';
 const clients: ReadonlyArray<client> = ['mysql', 'pg'];
@@ -14,6 +15,8 @@ const clients: ReadonlyArray<client> = ['mysql', 'pg'];
 type format = Format;
 const formats: ReadonlyArray<format> = [Format.json, Format.commonJS, Format.es6, Format.typescript];
 
+type logLevel = LogLevel;
+const logLevels: ReadonlyArray<logLevel> = [LogLevel.debug, LogLevel.info];
 
 const args = usage('Usage: $0 <command> [options]')
     .options({
@@ -24,8 +27,9 @@ const args = usage('Usage: $0 <command> [options]')
         password: { type: 'string', default: '' },
         database: { type: 'string', default: 'public' },
         outdir: { type: 'string', default: './gen' },
-        format: { choices: formats, default: formats[0] },
+        format: { choices: formats, default: Format.json },
         prettierConfig: { type: 'string' },
+        logLevel: { choices: logLevels, default: LogLevel.info },
     })
     .global('config')
     .default('config', 'introspect-config.json')
@@ -48,14 +52,15 @@ const run = async () => {
         };
         const outdir = args.outdir;
         const format = args.format;
-        const prettierConfig  = args.prettierConfig;
+        const prettierConfig = args.prettierConfig;
+        const logs = args.logLevel;
 
         const CURRENT = process.cwd();
         const GENERATED_DIR = path.join(CURRENT, outdir);
 
-        await generate({ conn, outdir: GENERATED_DIR, format, prettierConfig });
+        await generate({ conn, outdir: GENERATED_DIR, format, prettierConfig, logLevel: logs });
     } catch (e) {
-        console.error(e.message);
+        console.error(e);
         console.log('Use: "relation -h" to see help');
         process.exit(1);
     }

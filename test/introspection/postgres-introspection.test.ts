@@ -1,17 +1,16 @@
-import { buildDBSchemas, closeConnection, knex, schemaName } from '../../Setup/build-test-db';
-import { MySQLIntrospection } from '../../../src/schema-generator/introspection/MySQLIntrospection';
-import { Introspection } from '../../../src/schema-generator/introspection/IntrospectionTypes';
 import 'jest-extended';
-import { describeif } from '../../Setup/helpers';
-import { DB } from '../../Setup/test.env';
+import { PostgresIntrospection } from 'src/introspection';
+import { Introspection } from 'src/introspection/introspection';
+import { LogLevel } from 'src/types';
+import { closeConnection, DB, describeif, knex, openConnection } from 'test/setup';
 
-describeif(DB() === 'mysql')('MySQLIntrospection', () => {
+describeif(DB() === 'pg')('PostgresIntrospection', () => {
     let intro: Introspection;
 
     beforeAll(
         async (): Promise<void> => {
-            await buildDBSchemas();
-            intro = new MySQLIntrospection(knex(), schemaName);
+            await openConnection();
+            intro = new PostgresIntrospection({ knex: knex(), logLevel: LogLevel.info });
         },
     );
     afterAll(async () => {
@@ -26,24 +25,20 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
     });
     describe('getEnumTypesForTable', () => {
         it('Loads all enums for a table', async (): Promise<void> => {
-            const enums = await intro.getEnumTypesForTable('users');
-            expect(Object.keys(enums)).toHaveLength(2);
-        });
-        it('Names enums with table prefix', async (): Promise<void> => {
-            const enums = await intro.getEnumTypesForTable('users');
-            expect(Object.keys(enums)).toIncludeAllMembers(['users_subscription_level', 'users_permissions']);
+            const enums = await intro.getEnumTypesForTables(['users']);
+            expect(Object.keys(enums['users'])).toHaveLength(2);
         });
         it('Returns the correct column and values for each enum', async (): Promise<void> => {
-            const enums = await intro.getEnumTypesForTable('users');
-            expect(Object.values(enums)).toIncludeAllMembers([
+            const enums = await intro.getEnumTypesForTables(['users']);
+            expect(Object.values(enums['users'])).toIncludeAllMembers([
                 {
-                    columnName: 'permissions',
-                    enumName: 'users_permissions',
+                    id: expect.any(String),
+                    enumName: 'permissions',
                     values: ['ADMIN', 'USER'],
                 },
                 {
-                    columnName: 'subscription_level',
-                    enumName: 'users_subscription_level',
+                    id: expect.any(String),
+                    enumName: 'subscription_level',
                     values: ['BRONZE', 'GOLD', 'SILVER'],
                 },
             ]);
@@ -51,20 +46,20 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
     });
     describe('getTableTypes', () => {
         it('Loads all columns for a table', async (): Promise<void> => {
-            const enums = await intro.getEnumTypesForTable('users');
-            const types = await intro.getTableTypes('users', enums);
-            expect(Object.keys(types)).toHaveLength(10);
+            const enums = await intro.getEnumTypesForTables(['users']);
+            const { users } = await intro.getTableTypes(['users', 'teams'], enums);
+            expect(Object.keys(users)).toHaveLength(10);
         });
         it('Maps types correctly from db to typescript including enums', async (): Promise<void> => {
-            const enums = await intro.getEnumTypesForTable('users');
-            const types = await intro.getTableTypes('users', enums);
+            const enums = await intro.getEnumTypesForTables(['users']);
+            const { users: types } = await intro.getTableTypes(['users'], enums);
 
             expect(types['user_id']).toEqual({
-                dbType: 'int',
+                dbType: 'int4',
                 nullable: false,
                 tsType: 'number',
                 columnName: 'user_id',
-                columnDefault: 'auto_increment',
+                columnDefault: `nextval('users_user_id_seq'::regclass)`,
             });
             expect(types['email']).toEqual({
                 dbType: 'varchar',
@@ -81,14 +76,14 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
                 columnDefault: null,
             });
             expect(types['permissions']).toEqual({
-                dbType: 'enum',
+                dbType: 'permissions',
                 nullable: true,
-                tsType: 'users_permissions',
+                tsType: 'permissions',
                 columnName: 'permissions',
-                columnDefault: 'USER',
+                columnDefault: `'USER'::permissions`,
             });
             expect(types['deleted_at']).toEqual({
-                dbType: 'datetime',
+                dbType: 'timestamptz',
                 nullable: true,
                 tsType: 'Date',
                 columnName: 'deleted_at',
@@ -98,27 +93,27 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
     });
     describe('getTableConstraints', () => {
         it('Loads all primary key columns for table', async (): Promise<void> => {
-            const userKeys = await intro.getTableConstraints('users');
-            expect(userKeys).toIncludeAllMembers([
+            const { users } = await intro.getTableConstraints(['users', 'teams']);
+            expect(users).toIncludeAllMembers([
                 expect.objectContaining({
                     columnNames: ['user_id'],
-                    constraintName: 'PRIMARY',
+                    constraintName: 'users_pkey',
                     constraintType: 'PRIMARY KEY',
                 }),
             ]);
             // check compound key
-            const teamMemberKeys = await intro.getTableConstraints('team_members');
-            expect(teamMemberKeys).toIncludeAllMembers([
+            const { team_members } = await intro.getTableConstraints(['team_members', 'users']);
+            expect(team_members).toIncludeAllMembers([
                 expect.objectContaining({
                     columnNames: ['team_id', 'user_id'],
-                    constraintName: 'PRIMARY',
+                    constraintName: 'team_members_pkey',
                     constraintType: 'PRIMARY KEY',
                 }),
             ]);
         });
         it('Loads all foreign key columns for table', async (): Promise<void> => {
-            const postKeys = await intro.getTableConstraints('posts');
-            expect(postKeys).toIncludeAllMembers([
+            const { posts } = await intro.getTableConstraints(['users', 'posts']);
+            expect(posts).toIncludeAllMembers([
                 expect.objectContaining({
                     columnNames: ['author_id'],
                     constraintType: 'FOREIGN KEY',
@@ -130,8 +125,8 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
             ]);
         });
         it('loads self relation keys', async () => {
-            const userKeys = await intro.getTableConstraints('users');
-            expect(userKeys).toIncludeAllMembers([
+            const { users } = await intro.getTableConstraints(['users', 'posts']);
+            expect(users).toIncludeAllMembers([
                 expect.objectContaining({
                     columnNames: ['best_friend_id'],
                     constraintType: 'FOREIGN KEY',
@@ -139,8 +134,8 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
             ]);
         });
         it('loads unique keys', async () => {
-            const userKeys = await intro.getTableConstraints('users');
-            expect(userKeys).toIncludeAllMembers([
+            const { users } = await intro.getTableConstraints(['users', 'posts']);
+            expect(users).toIncludeAllMembers([
                 expect.objectContaining({
                     columnNames: ['email'],
                     constraintType: 'UNIQUE',
@@ -150,33 +145,43 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
     });
     describe('getForwardRelations', () => {
         it('Loads all relations on foreign keys for a table', async (): Promise<void> => {
-            const rels = await intro.getForwardRelations('team_members');
-            expect(rels).toIncludeAllMembers([
+            const { team_members } = await intro.getForwardRelations(['users', 'team_members']);
+            expect(team_members).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'users',
-                    alias: 'users',
                     joins: [
                         {
                             fromColumn: 'user_id',
                             toColumn: 'user_id',
                         },
                     ],
+                    type: 'belongsTo',
                 }),
                 expect.objectContaining({
                     toTable: 'teams',
-                    alias: 'teams',
                     joins: [
                         {
                             fromColumn: 'team_id',
                             toColumn: 'team_id',
                         },
                     ],
+                    type: 'belongsTo',
+                }),
+                expect.objectContaining({
+                    toTable: 'posts',
+                    joins: [
+                        {
+                            fromColumn: 'member_post_id',
+                            toColumn: 'post_id',
+                        },
+                    ],
+                    type: 'belongsTo',
                 }),
             ]);
         });
         it('Loads multiple relations to the same table', async (): Promise<void> => {
-            const rels = await intro.getForwardRelations('posts');
-            expect(rels).toIncludeAllMembers([
+            const { posts } = await intro.getForwardRelations(['posts', 'teams']);
+            expect(posts).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'users',
                     alias: 'users',
@@ -200,8 +205,12 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
             ]);
         });
         it('Loads all joins on compound foreign keys for a table', async (): Promise<void> => {
-            const rels = await intro.getForwardRelations('team_members_positions');
-            expect(rels).toIncludeAllMembers([
+            const { team_members_positions } = await intro.getForwardRelations([
+                'team_members_positions',
+                'teams',
+                'users',
+            ]);
+            expect(team_members_positions).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'team_members',
                     alias: 'team_members',
@@ -219,8 +228,8 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
             ]);
         });
         it('Loads all relations on self-referencing keys for table', async (): Promise<void> => {
-            const rels = await intro.getForwardRelations('users');
-            expect(rels).toIncludeAllMembers([
+            const { users } = await intro.getForwardRelations(['users', 'posts']);
+            expect(users).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'users',
                     alias: 'users',
@@ -236,8 +245,8 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
     });
     describe('getBackwardRelations', () => {
         it('Loads all relations on foreign keys referencing the table', async (): Promise<void> => {
-            const rels = await intro.getBackwardRelations('teams');
-            expect(rels).toIncludeAllMembers([
+            const { teams } = await intro.getBackwardRelations(['teams', 'users']);
+            expect(teams).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'team_members',
                     alias: 'team_members',
@@ -247,37 +256,40 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
                             toColumn: 'team_id',
                         },
                     ],
+                    type: 'hasMany',
                 }),
             ]);
         });
         it('Loads multiple relations from the same table', async (): Promise<void> => {
-            const rels = await intro.getBackwardRelations('users');
-            expect(rels).toIncludeAllMembers([
+            const { users } = await intro.getBackwardRelations(['users', 'posts']);
+            expect(users).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'posts',
                     alias: 'posts',
                     joins: [
                         {
-                            toColumn: 'author_id',
-                            fromColumn: 'user_id',
+                            toColumn: 'user_id',
+                            fromColumn: 'author_id',
                         },
                     ],
+                    type: 'hasMany',
                 }),
                 expect.objectContaining({
                     toTable: 'posts',
                     alias: 'posts',
                     joins: [
                         {
-                            toColumn: 'co_author',
-                            fromColumn: 'user_id',
+                            toColumn: 'user_id',
+                            fromColumn: 'co_author',
                         },
                     ],
+                    type: 'hasMany',
                 }),
             ]);
         });
         it('Loads all joins on compound foreign relations to the table', async (): Promise<void> => {
-            const rels = await intro.getBackwardRelations('team_members');
-            expect(rels).toIncludeAllMembers([
+            const { team_members } = await intro.getBackwardRelations(['users', 'team_members']);
+            expect(team_members).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'team_members_positions',
                     alias: 'team_members_positions',
@@ -295,15 +307,15 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
             ]);
         });
         it('Loads all relations on self-referencing keys for table', async (): Promise<void> => {
-            const rels = await intro.getBackwardRelations('users');
-            expect(rels).toIncludeAllMembers([
+            const { users } = await intro.getBackwardRelations(['users', 'posts']);
+            expect(users).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'users',
                     alias: 'users',
                     joins: [
                         {
-                            toColumn: 'best_friend_id',
-                            fromColumn: 'user_id',
+                            toColumn: 'user_id',
+                            fromColumn: 'best_friend_id',
                         },
                     ],
                 }),

@@ -52,7 +52,8 @@ export interface ColumnDefinition {
 }
 
 export interface EnumDefinition {
-    columnName: string;
+    id?: string;
+    columnName?: string;
     enumName: string;
     values: string[];
 }
@@ -69,7 +70,6 @@ export interface TableSchemaDefinition {
     primaryKey?: ConstraintDefinition;
     keys: ConstraintDefinition[];
     uniqueKeyCombinations: string[][];
-    nonUniqueKeyCombinations: string[][];
     columns: {
         [columnName: string]: ColumnDefinition;
     };
@@ -82,9 +82,14 @@ export interface TableSchemaDefinition {
 
 export interface DatabaseSchema {
     database: string;
-    schema: string;
+    schema?: string;
+    connection: {
+        host: string;
+        port: string | number;
+        user: string;
+    };
     generatedAt: Date;
     tables: {
         [tableName: string]: TableSchemaDefinition;
-    }
+    };
 }

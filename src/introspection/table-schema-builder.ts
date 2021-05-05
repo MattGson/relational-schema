@@ -1,19 +1,27 @@
-import { Introspection, TableColumnsDefinition } from './IntrospectionTypes';
-import { ColumnDefinition, Comparable, RelationDefinition, TableSchemaDefinition } from '../../types';
-import { CardinalityResolver } from './CardinalityResolver';
-import _ from 'lodash';
+import {
+    ColumnDefinition,
+    Comparable,
+    ConstraintDefinition,
+    EnumDefinitions,
+    RelationDefinition,
+    TableColumnsDefinition,
+    TableMap,
+    TableSchemaDefinition,
+} from '../types';
+import { CardinalityResolver } from './cardinality-resolver';
 
 /**
  * Build a js schema that describes the table and relationships
  */
 export class TableSchemaBuilder {
-    private readonly tableName: string;
-    private introspection: Introspection;
-
-    public constructor(tableName: string, introspection: Introspection) {
-        this.introspection = introspection;
-        this.tableName = tableName;
-    }
+    public constructor(
+        private tableName: string,
+        private enums: TableMap<EnumDefinitions>,
+        private tableDefinitions: TableMap<TableColumnsDefinition>,
+        private constraints: TableMap<ConstraintDefinition[]>,
+        private forwardRelations: TableMap<RelationDefinition[]>,
+        private backwardRelations: TableMap<RelationDefinition[]>,
+    ) {}
 
     /**
      * Format a forward relation (N - 1)
@@ -24,11 +32,11 @@ export class TableSchemaBuilder {
      * @param columns
      * @param uniqueKeys
      */
-    private async formatForwardRelation(
+    private formatForwardRelation(
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
         uniqueKeys: string[][],
-    ): Promise<RelationDefinition> {
+    ): RelationDefinition {
         // multiple columns so use the table-name instead
         if (relation.joins.length > 1) {
             relation.alias = relation.toTable.replace(/s+$/, '');
@@ -56,14 +64,15 @@ export class TableSchemaBuilder {
      * @param columns
      * @param relations, other relations
      */
-    private async formatBackwardRelationship(
+    private formatBackwardRelationship(
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
         relations: RelationDefinition[],
-    ): Promise<RelationDefinition> {
+        relatedTableConstraints: ConstraintDefinition[],
+    ): RelationDefinition {
         // check if table name will conflict with other relations on the same table
         let relationCount = 0;
-        for (let other_relation of relations) {
+        for (const other_relation of relations) {
             if (other_relation.toTable === relation.toTable) relationCount += 1;
         }
         if (relationCount > 1) {
@@ -71,7 +80,7 @@ export class TableSchemaBuilder {
         }
 
         // check if there is a unique constraint on the join. If so, it is (1 - 1);
-        const relatedTableConstraints = await this.introspection.getTableConstraints(relation.toTable);
+        // const relatedTableConstraints = await this.introspection.getTableConstraints(relation.toTable);
         const uniqueKeys = CardinalityResolver.getUniqueKeyCombinations(relatedTableConstraints);
 
         const joins = relation.joins.map((j) => j.toColumn).sort();
@@ -96,12 +105,8 @@ export class TableSchemaBuilder {
      */
     private static getSoftDeleteColumn(columns: TableColumnsDefinition): ColumnDefinition | null {
         let candidate: ColumnDefinition | undefined;
-        for (let column of Object.values(columns)) {
-            if (
-                column.columnName === 'deleted' ||
-                column.columnName === 'deleted_at' ||
-                column.columnName === 'deletedAt'
-            ) {
+        for (const column of Object.values(columns)) {
+            if (['deleted', 'deleted_at', 'deletedAt', 'soft_deleted', 'softDeleted'].includes(column.columnName)) {
                 candidate = column;
             }
         }
@@ -112,36 +117,36 @@ export class TableSchemaBuilder {
     /**
      * Get the schema definition for a table
      */
-    public async buildTableDefinition(): Promise<TableSchemaDefinition> {
-        // columns
-        const enums = await this.introspection.getEnumTypesForTable(this.tableName);
-        const columns = await this.introspection.getTableTypes(this.tableName, enums);
-        const softDelete = TableSchemaBuilder.getSoftDeleteColumn(columns);
+    public buildTableDefinition(): TableSchemaDefinition {
+        const tableConstraints = this.constraints[this.tableName];
+        const tableEnums = this.enums[this.tableName];
+
+        const tableColumns = this.tableDefinitions[this.tableName];
+        const tableForwardRelations = this.forwardRelations[this.tableName] ?? [];
+        const tableBackwardRelations = this.backwardRelations[this.tableName] ?? [];
+
+        const softDelete = TableSchemaBuilder.getSoftDeleteColumn(tableColumns);
 
         // constraints
-        const constraints = await this.introspection.getTableConstraints(this.tableName);
-        const uniqueKeyCombinations = CardinalityResolver.getUniqueKeyCombinations(constraints);
-        const nonUniqueKeyCombinations = CardinalityResolver.getNonUniqueKeyCombinations(constraints);
+        const uniqueKeyCombinations = CardinalityResolver.getUniqueKeyCombinations(tableConstraints);
 
         // relations
-        const forwardRelations = await this.introspection.getForwardRelations(this.tableName);
-        const backwardRelations = await this.introspection.getBackwardRelations(this.tableName);
-        const forwardRels = await Promise.all(
-            forwardRelations.map((r) => this.formatForwardRelation(r, columns, uniqueKeyCombinations)),
+        const forwardRels = tableForwardRelations.map((r) =>
+            this.formatForwardRelation(r, tableColumns, uniqueKeyCombinations),
         );
-        const backwardRels = await Promise.all(
-            backwardRelations.map((r) => this.formatBackwardRelationship(r, columns, backwardRelations)),
+
+        const backwardRels = tableBackwardRelations.map((r) =>
+            this.formatBackwardRelationship(r, tableColumns, tableBackwardRelations, this.constraints[r.toTable]),
         );
 
         return {
-            primaryKey: CardinalityResolver.primaryKey(constraints),
-            keys: constraints,
+            primaryKey: CardinalityResolver.primaryKey(tableConstraints),
+            keys: tableConstraints,
             uniqueKeyCombinations,
-            nonUniqueKeyCombinations,
             relations: [...forwardRels, ...backwardRels],
-            columns,
+            columns: tableColumns,
             softDelete,
-            enums,
+            enums: tableEnums,
         };
     }
 }

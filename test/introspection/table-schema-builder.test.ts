@@ -1,16 +1,27 @@
-import { Introspection } from '../../../src/schema-generator/introspection/IntrospectionTypes';
-import { buildDBSchemas, closeConnection, knex, schemaName } from '../../Setup/build-test-db';
-import { TableSchemaBuilder } from '../../../src/schema-generator/introspection/TableSchemaBuilder';
 import 'jest-extended';
-import { DB, getIntrospection } from '../../Setup/test.env';
-import { itif } from '../../Setup/helpers';
+import { TableSchemaBuilder } from 'src/introspection';
+import { Introspection } from 'src/introspection/introspection';
+import { ConstraintDefinition, EnumDefinitions, RelationDefinition, TableColumnsDefinition, TableMap } from 'src/types';
+import { closeConnection, DB, getIntrospection, itif, knex, openConnection, schemaName } from 'test/setup';
 
 describe('TableSchemaBuilder', () => {
+    let tables;
+    let enums: TableMap<EnumDefinitions>;
+    let definitions: TableMap<TableColumnsDefinition>;
+    let constraints: TableMap<ConstraintDefinition[]>;
+    let forward: TableMap<RelationDefinition[]>;
+    let backwards: TableMap<RelationDefinition[]>;
     let intro: Introspection;
     beforeAll(
         async (): Promise<void> => {
-            await buildDBSchemas();
+            await openConnection();
             intro = getIntrospection(knex(), schemaName);
+            tables = await intro.getSchemaTables();
+            enums = await intro.getEnumTypesForTables(tables);
+            definitions = await intro.getTableTypes(tables, enums);
+            constraints = await intro.getTableConstraints(tables);
+            forward = await intro.getForwardRelations(tables);
+            backwards = await intro.getBackwardRelations(tables);
         },
     );
     afterAll(async () => {
@@ -20,7 +31,14 @@ describe('TableSchemaBuilder', () => {
         describe('key constraints', () => {
             describe('Primary key', () => {
                 it('Gets the primary key for a table', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.primaryKey).toEqual(
@@ -30,7 +48,14 @@ describe('TableSchemaBuilder', () => {
                     );
                 });
                 it('Gets a compound primary key for a table', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.primaryKey).toEqual(
@@ -42,7 +67,14 @@ describe('TableSchemaBuilder', () => {
             });
             describe('Unique keys', () => {
                 it('Gets unique key constraints for a table', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.keys).toIncludeAllMembers([
@@ -58,7 +90,14 @@ describe('TableSchemaBuilder', () => {
                 });
 
                 it('Gets compound unique key constraints for a table', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members_positions', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members_positions',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.keys).toIncludeAllMembers([
@@ -71,7 +110,14 @@ describe('TableSchemaBuilder', () => {
             });
             describe('Foreign keys', () => {
                 it('Gets foreign key constraints for a table', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.keys).toIncludeAllMembers([
@@ -90,7 +136,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Gets compound foreign key constraints for a table', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members_positions', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members_positions',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.keys).toIncludeAllMembers([
@@ -105,16 +158,28 @@ describe('TableSchemaBuilder', () => {
 
         describe('key combinations', () => {
             describe('uniqueKeyCombinations', () => {
-                it('Gets minimal key column combinations that uniquely define a row for a table', async (): Promise<
-                    void
-                > => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                it('Gets minimal key column combinations that uniquely define a row for a table', async (): Promise<void> => {
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.uniqueKeyCombinations).toIncludeAllMembers([['email'], ['token'], ['user_id']]);
 
                     // with compound keys
-                    const schemaBuilder2 = new TableSchemaBuilder('team_members_positions', intro);
+                    const schemaBuilder2 = new TableSchemaBuilder(
+                        'team_members_positions',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema2 = await schemaBuilder2.buildTableDefinition();
 
                     expect(schema2.uniqueKeyCombinations).toIncludeAllMembers([
@@ -123,37 +188,19 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
             });
-            describe('nonUniqueKeyCombinations', () => {
-                it('Gets key column combinations that DO NOT uniquely define a row for a table', async (): Promise<
-                    void
-                > => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
-                    const schema = await schemaBuilder.buildTableDefinition();
-
-                    expect(schema.nonUniqueKeyCombinations).toIncludeAllMembers([['best_friend_id']]);
-                });
-                it('Permutes compound unique keys to form non-unique keys', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members_positions', intro);
-                    const schema = await schemaBuilder.buildTableDefinition();
-
-                    expect(schema.nonUniqueKeyCombinations).toIncludeAllMembers([
-                        ['team_id'],
-                        ['user_id'],
-                        ['position', 'team_id'],
-                        ['position', 'user_id'],
-                        ['manager', 'team_id'],
-                        ['manager', 'user_id'],
-                        ['position'],
-                        ['manager'],
-                    ]);
-                });
-            });
         });
         describe('Columns', () => {
             itif(DB() === 'mysql')(
                 'Gets the columns for a table',
                 async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     // just smoke test as the introspection takes care of this
@@ -173,7 +220,14 @@ describe('TableSchemaBuilder', () => {
             itif(DB() === 'pg')(
                 'Gets the columns for a table',
                 async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     // just smoke test as the introspection takes care of this
@@ -195,7 +249,14 @@ describe('TableSchemaBuilder', () => {
             itif(DB() == 'mysql')(
                 'Gets the enums for a table',
                 async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     // just smoke test as the introspection takes care of this
@@ -218,7 +279,14 @@ describe('TableSchemaBuilder', () => {
             itif(DB() == 'pg')(
                 'Gets the enums for a table',
                 async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     // just smoke test as the introspection takes care of this
@@ -237,7 +305,14 @@ describe('TableSchemaBuilder', () => {
         describe('Relations', () => {
             describe('forward relations', () => {
                 it('Forwards relations on a unique key are "hasOne"', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members_positions', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members_positions',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -248,7 +323,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Forwards relations on a non-unique key are "belongsTo"', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('posts', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'posts',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -259,7 +341,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Forwards relations are aliased by column name with `id` stripped', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -277,7 +366,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Compound forwards relations are aliased with the joined table name', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members_positions', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members_positions',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -293,7 +389,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Forwards relations have trailing "s" stripped', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members_positions', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members_positions',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -311,7 +414,14 @@ describe('TableSchemaBuilder', () => {
             });
             describe('Backwards relations', () => {
                 it('Backwards relations on a unique key are "hasOne"', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('team_members', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'team_members',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -322,7 +432,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Backwards relations on a non-unique key are "hasMany"', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -333,7 +450,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Backwards relations are aliased as the table name by default', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('posts', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'posts',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -346,7 +470,14 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
                 it('Backwards relations of type hasMany are aliased with a trailing "s"', async (): Promise<void> => {
-                    const schemaBuilder = new TableSchemaBuilder('posts', intro);
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'posts',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -358,10 +489,15 @@ describe('TableSchemaBuilder', () => {
                         }),
                     ]);
                 });
-                it('Backwards relations are aliased with columnName_tableName if there are multiple relations of the table', async (): Promise<
-                    void
-                > => {
-                    const schemaBuilder = new TableSchemaBuilder('users', intro);
+                it('Backwards relations are aliased with columnName_tableName if there are multiple relations of the table', async (): Promise<void> => {
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'users',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
                     const schema = await schemaBuilder.buildTableDefinition();
 
                     expect(schema.relations).toIncludeAllMembers([
@@ -397,7 +533,14 @@ describe('TableSchemaBuilder', () => {
                 });
             });
             it('Relation alias that conflicts with column name is aliased with _', async (): Promise<void> => {
-                const schemaBuilder = new TableSchemaBuilder('posts', intro);
+                const schemaBuilder = new TableSchemaBuilder(
+                    'posts',
+                    enums,
+                    definitions,
+                    constraints,
+                    forward,
+                    backwards,
+                );
                 const schema = await schemaBuilder.buildTableDefinition();
 
                 expect(schema.relations).toIncludeAllMembers([
@@ -413,7 +556,14 @@ describe('TableSchemaBuilder', () => {
                     }),
                 ]);
 
-                const schemaBuilder2 = new TableSchemaBuilder('posts', intro);
+                const schemaBuilder2 = new TableSchemaBuilder(
+                    'posts',
+                    enums,
+                    definitions,
+                    constraints,
+                    forward,
+                    backwards,
+                );
                 const schema2 = await schemaBuilder2.buildTableDefinition();
 
                 expect(schema2.relations).toIncludeAllMembers([
