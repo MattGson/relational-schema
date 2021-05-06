@@ -1,3 +1,15 @@
+## [0.2.2](https://github.com/MattGson/relational-schema/compare/v0.2.1...v0.2.2) (2021-05-06)
+
+
+### Bug Fixes
+
+* **all:** large refactoring to project setup, structure ([cb318b4](https://github.com/MattGson/relational-schema/commit/cb318b4a02aac287845749a0c5417665f66f52bb))
+
+
+### Performance Improvements
+
+* **introspect:** batches queries to bulk load for all tables up front ([3651b74](https://github.com/MattGson/relational-schema/commit/3651b740a31a6ad393bc4a10a010bf45fbfda8fb))
+
 ## [0.2.1](https://github.com/MattGson/relational-schema/compare/v0.2.0...v0.2.1) (2021-04-29)
 
 
