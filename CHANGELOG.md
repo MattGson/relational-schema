@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/MattGson/relational-schema/compare/v0.3.0...v0.3.1) (2021-05-10)
+
+
+### Bug Fixes
+
+* **cli:** fixes CLI entrypoint ([45e14b5](https://github.com/MattGson/relational-schema/commit/45e14b516d61566e4ee89b0f7ddd144829faa90d))
+
 # [0.3.0](https://github.com/MattGson/relational-schema/compare/v0.2.3...v0.3.0) (2021-05-10)
 
 
