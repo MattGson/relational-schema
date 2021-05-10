@@ -292,9 +292,9 @@ describe('TableSchemaBuilder', () => {
                     // just smoke test as the introspection takes care of this
                     expect(schema.enums).toEqual(
                         expect.objectContaining({
-                            users_permissions: {
-                                columnName: '',
-                                enumName: 'users_permissions',
+                            permissions: {
+                                id: expect.any(String),
+                                enumName: 'permissions',
                                 values: ['ADMIN', 'USER'],
                             },
                         }),
@@ -381,8 +381,8 @@ describe('TableSchemaBuilder', () => {
                             toTable: 'team_members',
                             alias: 'team_member',
                             joins: [
-                                { fromColumn: 'team_id', toColumn: 'team_id' },
                                 { fromColumn: 'user_id', toColumn: 'user_id' },
+                                { fromColumn: 'team_id', toColumn: 'team_id' },
                             ],
                             type: 'hasOne',
                         }),
@@ -404,8 +404,8 @@ describe('TableSchemaBuilder', () => {
                             toTable: 'team_members',
                             alias: 'team_member',
                             joins: [
-                                { fromColumn: 'team_id', toColumn: 'team_id' },
                                 { fromColumn: 'user_id', toColumn: 'user_id' },
+                                { fromColumn: 'team_id', toColumn: 'team_id' },
                             ],
                             type: 'hasOne',
                         }),
@@ -464,7 +464,7 @@ describe('TableSchemaBuilder', () => {
                         expect.objectContaining({
                             toTable: 'team_members',
                             alias: 'team_members',
-                            joins: [{ fromColumn: 'post_id', toColumn: 'member_post_id' }],
+                            joins: [{ fromColumn: 'member_post_id', toColumn: 'post_id' }],
                             type: 'hasMany',
                         }),
                     ]);
@@ -484,7 +484,7 @@ describe('TableSchemaBuilder', () => {
                         expect.objectContaining({
                             toTable: 'team_members',
                             alias: 'team_members',
-                            joins: [{ fromColumn: 'post_id', toColumn: 'member_post_id' }],
+                            joins: [{ fromColumn: 'member_post_id', toColumn: 'post_id' }],
                             type: 'hasMany',
                         }),
                     ]);
@@ -500,14 +500,15 @@ describe('TableSchemaBuilder', () => {
                     );
                     const schema = await schemaBuilder.buildTableDefinition();
 
+                    // TODO:- are alias wrong now that from/to switched?
                     expect(schema.relations).toIncludeAllMembers([
                         expect.objectContaining({
                             toTable: 'posts',
                             alias: 'author_posts',
                             joins: [
                                 {
-                                    toColumn: 'author_id',
-                                    fromColumn: 'user_id',
+                                    toColumn: 'user_id',
+                                    fromColumn: 'author_id',
                                 },
                             ],
                             type: 'hasMany',
@@ -517,8 +518,8 @@ describe('TableSchemaBuilder', () => {
                             alias: 'co_author_posts',
                             joins: [
                                 {
-                                    toColumn: 'co_author',
-                                    fromColumn: 'user_id',
+                                    toColumn: 'user_id',
+                                    fromColumn: 'co_author',
                                 },
                             ],
                             type: 'hasMany',

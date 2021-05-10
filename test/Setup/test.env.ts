@@ -14,5 +14,5 @@ export const getIntrospection = (knex: Knex, schema: string): Introspection => {
     if (DB() === 'mysql') {
         return new MySQLIntrospection({ knex, schemaName: schema, logLevel: LogLevel.info });
     }
-    return new PostgresIntrospection({ knex, schemaName: schema, logLevel: LogLevel.info });
+    return new PostgresIntrospection({ knex, logLevel: LogLevel.info });
 };
