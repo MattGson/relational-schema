@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/MattGson/relational-schema/compare/v0.2.3...v0.3.0) (2021-05-10)
+
+
+### Features
+
+* **transitive-relations:** added support for transitive (many-to-many) relations ([70e1aca](https://github.com/MattGson/relational-schema/commit/70e1aca19a63516560ef57b89c4fadca16406f05)), closes [#14](https://github.com/MattGson/relational-schema/issues/14)
+
 ## [0.2.3](https://github.com/MattGson/relational-schema/compare/v0.2.2...v0.2.3) (2021-05-10)
 
 
