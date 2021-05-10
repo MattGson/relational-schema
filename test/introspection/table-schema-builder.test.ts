@@ -2,7 +2,7 @@ import 'jest-extended';
 import { TableSchemaBuilder } from 'src/introspection';
 import { Introspection } from 'src/introspection/introspection';
 import { ConstraintDefinition, EnumDefinitions, RelationDefinition, TableColumnsDefinition, TableMap } from 'src/types';
-import { closeConnection, DB, getIntrospection, itif, knex, openConnection, schemaName } from 'test/setup';
+import { closeConnection, DB, getIntrospection, itif, knex, openConnection, databaseName } from 'test/helpers';
 
 describe('TableSchemaBuilder', () => {
     let tables;
@@ -15,7 +15,14 @@ describe('TableSchemaBuilder', () => {
     beforeAll(
         async (): Promise<void> => {
             await openConnection();
-            intro = getIntrospection(knex(), schemaName);
+        },
+    );
+    afterAll(async () => {
+        await closeConnection();
+    });
+    beforeEach(
+        async (): Promise<void> => {
+            intro = getIntrospection(knex(), databaseName);
             tables = await intro.getSchemaTables();
             enums = await intro.getEnumTypesForTables(tables);
             definitions = await intro.getTableTypes(tables, enums);
@@ -24,9 +31,6 @@ describe('TableSchemaBuilder', () => {
             backwards = await intro.getBackwardRelations(tables);
         },
     );
-    afterAll(async () => {
-        await closeConnection();
-    });
     describe('buildTableDefinition', () => {
         describe('key constraints', () => {
             describe('Primary key', () => {
@@ -99,7 +103,6 @@ describe('TableSchemaBuilder', () => {
                         backwards,
                     );
                     const schema = await schemaBuilder.buildTableDefinition();
-
                     expect(schema.keys).toIncludeAllMembers([
                         expect.objectContaining({
                             columnNames: ['manager', 'position'],
@@ -292,9 +295,9 @@ describe('TableSchemaBuilder', () => {
                     // just smoke test as the introspection takes care of this
                     expect(schema.enums).toEqual(
                         expect.objectContaining({
-                            users_permissions: {
-                                columnName: '',
-                                enumName: 'users_permissions',
+                            permissions: {
+                                id: expect.any(String),
+                                enumName: 'permissions',
                                 values: ['ADMIN', 'USER'],
                             },
                         }),
@@ -355,12 +358,12 @@ describe('TableSchemaBuilder', () => {
                         expect.objectContaining({
                             toTable: 'users',
                             alias: 'best_friend',
-                            joins: [
+                            joins: expect.arrayContaining([
                                 {
                                     fromColumn: 'best_friend_id',
                                     toColumn: 'user_id',
                                 },
-                            ],
+                            ]),
                             type: 'belongsTo',
                         }),
                     ]);
@@ -380,10 +383,10 @@ describe('TableSchemaBuilder', () => {
                         expect.objectContaining({
                             toTable: 'team_members',
                             alias: 'team_member',
-                            joins: [
-                                { fromColumn: 'team_id', toColumn: 'team_id' },
+                            joins: expect.arrayContaining([
                                 { fromColumn: 'user_id', toColumn: 'user_id' },
-                            ],
+                                { fromColumn: 'team_id', toColumn: 'team_id' },
+                            ]),
                             type: 'hasOne',
                         }),
                     ]);
@@ -403,10 +406,10 @@ describe('TableSchemaBuilder', () => {
                         expect.objectContaining({
                             toTable: 'team_members',
                             alias: 'team_member',
-                            joins: [
-                                { fromColumn: 'team_id', toColumn: 'team_id' },
+                            joins: expect.arrayContaining([
                                 { fromColumn: 'user_id', toColumn: 'user_id' },
-                            ],
+                                { fromColumn: 'team_id', toColumn: 'team_id' },
+                            ]),
                             type: 'hasOne',
                         }),
                     ]);
@@ -464,7 +467,7 @@ describe('TableSchemaBuilder', () => {
                         expect.objectContaining({
                             toTable: 'team_members',
                             alias: 'team_members',
-                            joins: [{ fromColumn: 'post_id', toColumn: 'member_post_id' }],
+                            joins: [{ toColumn: 'member_post_id', fromColumn: 'post_id' }],
                             type: 'hasMany',
                         }),
                     ]);
@@ -484,7 +487,7 @@ describe('TableSchemaBuilder', () => {
                         expect.objectContaining({
                             toTable: 'team_members',
                             alias: 'team_members',
-                            joins: [{ fromColumn: 'post_id', toColumn: 'member_post_id' }],
+                            joins: [{ toColumn: 'member_post_id', fromColumn: 'post_id' }],
                             type: 'hasMany',
                         }),
                     ]);
@@ -506,8 +509,8 @@ describe('TableSchemaBuilder', () => {
                             alias: 'author_posts',
                             joins: [
                                 {
-                                    toColumn: 'author_id',
                                     fromColumn: 'user_id',
+                                    toColumn: 'author_id',
                                 },
                             ],
                             type: 'hasMany',
@@ -517,8 +520,8 @@ describe('TableSchemaBuilder', () => {
                             alias: 'co_author_posts',
                             joins: [
                                 {
-                                    toColumn: 'co_author',
                                     fromColumn: 'user_id',
+                                    toColumn: 'co_author',
                                 },
                             ],
                             type: 'hasMany',

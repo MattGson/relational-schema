@@ -10,9 +10,9 @@ export const DB = (): 'mysql' | 'pg' => {
     return db;
 };
 
-export const getIntrospection = (knex: Knex, schema: string): Introspection => {
+export const getIntrospection = (knex: Knex, databaseName: string): Introspection => {
     if (DB() === 'mysql') {
-        return new MySQLIntrospection({ knex, schemaName: schema, logLevel: LogLevel.info });
+        return new MySQLIntrospection({ knex, databaseName, logLevel: LogLevel.info });
     }
-    return new PostgresIntrospection({ knex, schemaName: schema, logLevel: LogLevel.info });
+    return new PostgresIntrospection({ knex, logLevel: LogLevel.info });
 };

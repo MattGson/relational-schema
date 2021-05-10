@@ -2,7 +2,7 @@ import 'jest-extended';
 import { Introspection } from 'src/introspection/introspection';
 import { MySQLIntrospection } from 'src/introspection/mysql-introspection';
 import { LogLevel } from 'src/types';
-import { buildDBSchemas, closeConnection, DB, describeif, knex, schemaName } from 'test/setup';
+import { buildDBSchemas, closeConnection, DB, describeif, knex, databaseName } from 'test/helpers';
 
 describeif(DB() === 'mysql')('MySQLIntrospection', () => {
     let intro: Introspection;
@@ -10,7 +10,7 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
     beforeAll(
         async (): Promise<void> => {
             await buildDBSchemas();
-            intro = new MySQLIntrospection({ knex: knex(), schemaName, logLevel: LogLevel.info });
+            intro = new MySQLIntrospection({ knex: knex(), databaseName, logLevel: LogLevel.info });
         },
     );
     afterAll(async () => {

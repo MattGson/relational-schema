@@ -41,6 +41,8 @@ export interface RelationDefinition {
     joins: JoinDefinition[];
     // direction of key / cardinality of join
     type: JoinType;
+    // name of the constraint the relation is derived from
+    constraintName: string;
 }
 
 export interface ColumnDefinition {

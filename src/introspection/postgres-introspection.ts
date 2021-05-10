@@ -267,6 +267,7 @@ export class PostgresIntrospection extends Introspection {
                     );
                 })
                 .whereIn('x.table_name', tables)
+                .where({ 'x.table_schema': this.schemaName })
                 .select(
                     'x.constraint_name',
                     'x.table_name',
@@ -291,6 +292,7 @@ export class PostgresIntrospection extends Introspection {
                         toTable: referenced_table_name,
                         alias: referenced_table_name,
                         joins: [],
+                        constraintName: constraint_name,
                         type: 'belongsTo', // default always N - 1
                     };
                 relations[constraint_name].joins.push({
@@ -305,16 +307,18 @@ export class PostgresIntrospection extends Introspection {
     }
 
     /**
-     * Get all relations where the given table does not hold the constraint (1 - N or 1 - 1) i.e. Users.user_id <- Posts.author_id
+     * Get all relations where the given table does not hold the constraint (1 - N or 1 - 1)
+     * That is => this table is the referenced_table
+     * i.e. Users.user_id <- Posts.author_id
      * @param tables
      */
     public async getBackwardRelations(tables: string[]): Promise<TableMap<RelationDefinition[]>> {
         type rowType = {
             constraint_name: string;
             table_name: string;
-            column_name: string;
-            referenced_table_name: string;
             referenced_column_name: string;
+            referencing_table_name: string;
+            referencing_column_name: string;
         };
 
         const rows: rowType[] = await this.query(
@@ -328,12 +332,13 @@ export class PostgresIntrospection extends Introspection {
                     );
                 })
                 .whereIn('y.table_name', tables)
+                .where({ 'y.table_schema': this.schemaName })
                 .select(
                     'x.constraint_name',
-                    'x.table_name as referenced_table_name',
-                    'x.column_name as referenced_column_name',
-                    'y.table_name ',
-                    'y.column_name',
+                    'x.table_name as referencing_table_name',
+                    'x.column_name as referencing_column_name',
+                    'y.table_name',
+                    'y.column_name as referenced_column_name',
                 )
                 .orderBy('c.constraint_name', 'x.ordinal_position'),
         );
@@ -344,19 +349,26 @@ export class PostgresIntrospection extends Introspection {
             // group by constraint name to capture multiple relations to same table
             const relations: { [constraintName: string]: RelationDefinition } = {};
             rows.forEach((row) => {
-                const { column_name, table_name, referenced_column_name, referenced_table_name, constraint_name } = row;
-                if (table_name == null || column_name == null) return;
+                const {
+                    referenced_column_name,
+                    referencing_column_name,
+                    referencing_table_name,
+                    constraint_name,
+                    table_name,
+                } = row;
+                if (table_name == null || referenced_column_name == null) return;
 
                 if (!relations[constraint_name])
                     relations[constraint_name] = {
-                        toTable: referenced_table_name,
-                        alias: referenced_table_name,
+                        toTable: referencing_table_name,
+                        alias: referencing_table_name,
                         joins: [],
+                        constraintName: constraint_name,
                         type: 'hasMany', // default always 1 - N
                     };
                 relations[constraint_name].joins.push({
                     fromColumn: referenced_column_name,
-                    toColumn: column_name,
+                    toColumn: referencing_column_name,
                 });
             });
             results[table] = Object.values(relations);

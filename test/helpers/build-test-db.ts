@@ -6,7 +6,7 @@ import { Connection as MySQLConn } from 'promise-mysql';
 import { DB } from './test.env';
 type PoolConnection = PGConn | MySQLConn;
 
-export const schemaName = 'tests';
+export const databaseName = 'tests';
 export const mysqlConnection: ConnectionConfig = {
     client: 'mysql',
     connection: {
@@ -14,7 +14,7 @@ export const mysqlConnection: ConnectionConfig = {
         port: 3306,
         user: 'root',
         password: '',
-        database: schemaName,
+        database: databaseName,
         multipleStatements: true,
     },
 };
@@ -26,7 +26,7 @@ export const pgConnection: ConnectionConfig = {
         port: 5432,
         user: 'postgres',
         password: '',
-        database: schemaName,
+        database: databaseName,
         schema: 'public',
     },
     pool: {

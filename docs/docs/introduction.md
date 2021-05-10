@@ -94,7 +94,7 @@ The schema will be generated in `outdir` in the chosen format.
 ```json
 {
     "database": "tests",
-    "schema": "tests",
+    "schema": "public",
     "generatedAt": "2021-04-21T08:41:31.747Z",
     "tables": {
         "teams": {
