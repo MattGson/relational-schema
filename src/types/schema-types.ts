@@ -45,6 +45,29 @@ export interface RelationDefinition {
     constraintName: string;
 }
 
+export interface TransitiveRelationDefinition {
+    // name of table to join to
+    toTable: string;
+    // name of the intermediate table
+    joinTable: string;
+    // name of relation i.e. posts -> users would be 'author'
+    alias: string;
+    // direction of key / cardinality of join
+    type: 'manyToMany';
+
+    joinFrom: {
+        joins: JoinDefinition[];
+        toTable: string;
+        constraintName: string;
+    };
+
+    joinTo: {
+        joins: JoinDefinition[];
+        toTable: string;
+        constraintName: string;
+    };
+}
+
 export interface ColumnDefinition {
     dbType: string;
     nullable: boolean;
@@ -79,7 +102,7 @@ export interface TableSchemaDefinition {
     enums: {
         [enumName: string]: EnumDefinition;
     };
-    relations: RelationDefinition[];
+    relations: (RelationDefinition | TransitiveRelationDefinition)[];
 }
 
 export interface DatabaseSchema {

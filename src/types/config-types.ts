@@ -26,3 +26,7 @@ export enum LogLevel {
     info = 'info',
     debug = 'debug',
 }
+
+export interface BuilderOptions {
+    transitiveRelations: boolean;
+}

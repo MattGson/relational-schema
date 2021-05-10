@@ -7,5 +7,6 @@
     "database": "tests",
     "schema": "public",
     "outdir": "test/generated",
-    "format": "cjs"
+    "format": "cjs",
+    "transitiveRelations": true
 }

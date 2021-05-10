@@ -1,4 +1,4 @@
-import { ConnectionConfig, Format, LogLevel } from './types';
+import { BuilderOptions, ConnectionConfig, Format, LogLevel } from './types';
 import { introspectSchema } from './introspection/introspect';
 import { writeFormattedFile } from './printer';
 
@@ -16,11 +16,12 @@ export async function generate(args: {
     format: Format;
     prettierConfig?: string;
     logLevel: LogLevel;
+    options: BuilderOptions;
 }): Promise<ConnectionConfig> {
-    const { conn, outdir, format, prettierConfig, logLevel } = args;
+    const { conn, outdir, format, prettierConfig, logLevel, options } = args;
     console.log(`Generating for db: ${conn.client} - ${conn.connection.database}`);
 
-    const schema = await introspectSchema({ conn, logLevel });
+    const schema = await introspectSchema({ conn, logLevel, options });
 
     switch (format) {
         case Format.es6:

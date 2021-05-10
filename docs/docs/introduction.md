@@ -82,7 +82,7 @@ The schema will be generated in `outdir` in the chosen format.
 -   keys and constraints
 -   unique-ness
 -   Typescript type mappings
--   table relations (including direction)
+-   table relations (including direction, transitive relations)
 -   human readable relation alias'
 -   soft-delete idenfication
 -   enums

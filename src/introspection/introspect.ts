@@ -1,5 +1,5 @@
 import Knex from 'knex';
-import { ConnectionConfig, DatabaseSchema, LogLevel } from '../types';
+import { BuilderOptions, ConnectionConfig, DatabaseSchema, LogLevel } from '../types';
 import { Introspection } from './introspection';
 import { PostgresIntrospection } from './postgres-introspection';
 import { MySQLIntrospection } from './mysql-introspection';
@@ -12,8 +12,9 @@ import { TableSchemaBuilder } from './table-schema-builder';
 export const introspectSchema = async (params: {
     conn: ConnectionConfig;
     logLevel?: LogLevel;
+    options: BuilderOptions;
 }): Promise<DatabaseSchema> => {
-    const { conn, logLevel } = params;
+    const { conn, logLevel, options } = params;
 
     const { host, port, user, database, schema } = conn.connection;
 
@@ -56,7 +57,7 @@ export const introspectSchema = async (params: {
                 constraints,
                 forward,
                 backwards,
-            ).buildTableDefinition();
+            ).buildTableDefinition(options);
         });
 
         await knex.destroy();

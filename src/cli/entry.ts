@@ -30,6 +30,7 @@ const args = usage('Usage: $0 <command> [options]')
         format: { choices: formats, default: Format.json },
         prettierConfig: { type: 'string' },
         logLevel: { choices: logLevels, default: LogLevel.info },
+        transitiveRelations: { type: 'boolean', default: true },
     })
     .global('config')
     .default('config', 'introspect-config.json')
@@ -50,6 +51,11 @@ const run = async () => {
                 database: args.database,
             },
         };
+
+        const options = {
+            transitiveRelations: args.transitiveRelations,
+        };
+
         const outdir = args.outdir;
         const format = args.format;
         const prettierConfig = args.prettierConfig;
@@ -58,7 +64,7 @@ const run = async () => {
         const CURRENT = process.cwd();
         const GENERATED_DIR = path.join(CURRENT, outdir);
 
-        await generate({ conn, outdir: GENERATED_DIR, format, prettierConfig, logLevel: logs });
+        await generate({ conn, outdir: GENERATED_DIR, format, prettierConfig, logLevel: logs, options });
     } catch (e) {
         console.error(e);
         console.log('Use: "relation -h" to see help');
