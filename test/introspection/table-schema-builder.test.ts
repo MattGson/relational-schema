@@ -368,7 +368,7 @@ describe('TableSchemaBuilder', () => {
                         }),
                     ]);
                 });
-                it('Compound forwards relations are aliased with the joined table name', async (): Promise<void> => {
+                it('Compound forwards relations are aliased with the singularised joined table name', async (): Promise<void> => {
                     const schemaBuilder = new TableSchemaBuilder(
                         'team_members_positions',
                         enums,
@@ -391,7 +391,7 @@ describe('TableSchemaBuilder', () => {
                         }),
                     ]);
                 });
-                it('Forwards relations have trailing "s" stripped', async (): Promise<void> => {
+                it('Forwards relations alias are singularised', async (): Promise<void> => {
                     const schemaBuilder = new TableSchemaBuilder(
                         'team_members_positions',
                         enums,
@@ -452,7 +452,7 @@ describe('TableSchemaBuilder', () => {
                         }),
                     ]);
                 });
-                it('Backwards relations are aliased as the table name by default', async (): Promise<void> => {
+                it('Backwards relations are aliased as the plural table name by default', async (): Promise<void> => {
                     const schemaBuilder = new TableSchemaBuilder(
                         'posts',
                         enums,
@@ -472,7 +472,7 @@ describe('TableSchemaBuilder', () => {
                         }),
                     ]);
                 });
-                it('Backwards relations of type hasMany are aliased with a trailing "s"', async (): Promise<void> => {
+                it('Backwards relations of type hasMany are aliased with a plural', async (): Promise<void> => {
                     const schemaBuilder = new TableSchemaBuilder(
                         'posts',
                         enums,
@@ -535,7 +535,91 @@ describe('TableSchemaBuilder', () => {
                     ]);
                 });
             });
-            it('Relation alias that conflicts with column name is aliased with _', async (): Promise<void> => {
+            describe('Transitive relations', () => {
+                it('Transitive relations are manyToMany"', async (): Promise<void> => {
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'posts',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
+                    const schema = await schemaBuilder.buildTableDefinition({ transitiveRelations: true });
+                    expect(schema.relations).toIncludeAllMembers([
+                        expect.objectContaining({
+                            toTable: 'teams',
+                            type: 'manyToMany',
+                        }),
+                    ]);
+                });
+                it('Transitive relations have both joins defined', async (): Promise<void> => {
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'teams',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
+                    const schema = await schemaBuilder.buildTableDefinition({ transitiveRelations: true });
+                    expect(schema.relations).toIncludeAllMembers([
+                        expect.objectContaining({
+                            toTable: 'posts',
+                            joinTable: 'team_members',
+                            joinFrom: {
+                                joins: [{ fromColumn: 'team_id', toColumn: 'team_id' }],
+                                constraintName: 'team_members_team_id_foreign',
+                                toTable: 'team_members',
+                            },
+                            joinTo: {
+                                joins: [{ fromColumn: 'member_post_id', toColumn: 'post_id' }],
+                                constraintName: 'team_members_member_post_id_foreign',
+                                toTable: 'posts',
+                            },
+                            type: 'manyToMany',
+                        }),
+                    ]);
+                });
+                it('Transitive relations are aliased by the join_table_to_table by default', async (): Promise<void> => {
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'teams',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
+                    const schema = await schemaBuilder.buildTableDefinition({ transitiveRelations: true });
+                    expect(schema.relations).toIncludeAllMembers([
+                        expect.objectContaining({
+                            alias: 'team_members_posts',
+                            toTable: 'posts',
+                            joinTable: 'team_members',
+                            type: 'manyToMany',
+                        }),
+                    ]);
+                });
+                it('Transitive relations relating to the join table PK are aliased by the to_table name', async (): Promise<void> => {
+                    const schemaBuilder = new TableSchemaBuilder(
+                        'teams',
+                        enums,
+                        definitions,
+                        constraints,
+                        forward,
+                        backwards,
+                    );
+                    const schema = await schemaBuilder.buildTableDefinition({ transitiveRelations: true });
+                    expect(schema.relations).toIncludeAllMembers([
+                        expect.objectContaining({
+                            toTable: 'users',
+                            alias: 'users',
+                            type: 'manyToMany',
+                        }),
+                    ]);
+                });
+            });
+            it('Relation alias that conflicts with column name is aliased with _relation', async (): Promise<void> => {
                 const schemaBuilder = new TableSchemaBuilder(
                     'posts',
                     enums,
@@ -549,7 +633,7 @@ describe('TableSchemaBuilder', () => {
                 expect(schema.relations).toIncludeAllMembers([
                     expect.objectContaining({
                         toTable: 'users',
-                        alias: 'author_',
+                        alias: 'author_relation',
                         joins: [
                             {
                                 fromColumn: 'author_id',
@@ -572,7 +656,7 @@ describe('TableSchemaBuilder', () => {
                 expect(schema2.relations).toIncludeAllMembers([
                     expect.objectContaining({
                         toTable: 'users',
-                        alias: 'co_author_',
+                        alias: 'co_author_relation',
                         joins: [
                             {
                                 fromColumn: 'co_author',

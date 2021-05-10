@@ -25,20 +25,9 @@ We never recommend running the code gen against your production database. Instea
 ### Configuring code gen
 
 Define a config file `introspect-config.json` in the root directory of your project.
-This file is only used for code-gen, not for connecting during run-time.
 Change the contents of the file to connect to your database.
 
-The `outdir` option specifies where the Javascript schema files will be output.
-This should be inside of your project source so that the files are transpiled as part of your build.
-
-Supported output formats:
-
--   `json`, `es6`, `ts`, `cjs`
-
 For the `client` option you can choose between `mysql` and `pg`.
-
-You can optionally specify a `prettierConfig` which should be a path to a valid `prettierrc` file.
-This will be used to format the output files rather than the default formatting.
 
 ```json
 {
@@ -48,12 +37,22 @@ This will be used to format the output files rather than the default formatting.
     "password": "",
     "database": "users",
     "schema": "public",
+    "client": "pg",
     "outdir": "./src/generated",
-    "format": "json",
-    "client": "pg"
+    "format": "json"
 }
 ```
 
+#### Options
+
+-   `outdir` - where the Javascript schema files will be output.
+
+-   `format` - `json`, `es6`, `ts`, `cjs` - the file output format
+
+-   `prettierConfig` - specifies a path to a valid `prettierrc` file.
+    This will be used to format the output files rather than the default formatting.
+
+-   `transitiveRelations` - whether to include transitive (many-to-many) relations in the output. This can increase the file size by an order of magnitude so it is optional.
 
 Run:
 

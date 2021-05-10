@@ -7,8 +7,10 @@ import {
     TableColumnsDefinition,
     TableMap,
     TableSchemaDefinition,
+    TransitiveRelationDefinition,
 } from '../types';
 import { CardinalityResolver } from './cardinality-resolver';
+import * as pluralize from 'pluralize';
 
 /**
  * Build a js schema that describes the table and relationships
@@ -39,13 +41,15 @@ export class TableSchemaBuilder {
     ): RelationDefinition {
         // multiple columns so use the table-name instead
         if (relation.joins.length > 1) {
-            relation.alias = relation.toTable.replace(/s+$/, '');
-        }
-        // single column so just remove suffix etc
-        else {
+            relation.alias = relation.toTable;
+        } else {
             relation.alias = relation.joins[0].fromColumn.replace('_id', '');
         }
-        if (columns[relation.alias]) relation.alias += '_'; // handle any naming conflicts
+
+        relation.alias = pluralize.singular(relation.alias);
+
+        // handle any column naming conflicts
+        if (columns[relation.alias]) relation.alias += '_relation';
 
         // check if  it is 1 - 1;
         if (uniqueRelations.find((r) => r.constraintName === relation.constraintName)) relation.type = 'hasOne';
@@ -67,32 +71,32 @@ export class TableSchemaBuilder {
     private formatBackwardRelationship(
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
-        tableRelations: RelationDefinition[],
+        tableBackwardRelations: RelationDefinition[],
         uniqueRelations: RelationDefinition[],
     ): RelationDefinition {
+        // check if it is (1 - 1);
+        if (uniqueRelations.find((r) => r.constraintName === relation.constraintName)) {
+            relation.type = 'hasOne';
+            relation.alias = pluralize.singular(relation.toTable);
+        }
+
+        if (relation.type === 'hasMany') {
+            relation.alias = pluralize.plural(relation.toTable);
+        }
+
         // check if table name will conflict with other relations on the same table
         let relationCount = 0;
-        for (const other_relation of tableRelations) {
+        for (const other_relation of tableBackwardRelations) {
             if (other_relation.toTable === relation.toTable) relationCount += 1;
         }
 
         if (relationCount > 1) {
             // alias with the foreign key name and the table
-            relation.alias = `${relation.joins[0].toColumn.replace('_id', '')}_${relation.toTable}`;
+            relation.alias = `${relation.joins[0].toColumn.replace('_id', '')}_${relation.alias}`;
         }
 
-        // check if it is (1 - 1);
-        if (uniqueRelations.find((r) => r.constraintName === relation.constraintName)) {
-            relation.type = 'hasOne';
-            relation.alias = relation.alias.replace(/s+$/, ''); // remove trailing s
-        }
-
-        // add trailing s for (1 - N)
-        if (relation.type === 'hasMany' && relation.alias[relation.alias.length - 1] !== 's') {
-            relation.alias += `s`;
-        }
-        // handle any column conflicts
-        if (columns[relation.alias]) relation.alias += '_';
+        // handle column conflices
+        if (columns[relation.alias]) relation.alias += '_relation';
 
         return relation;
     }
@@ -146,9 +150,60 @@ export class TableSchemaBuilder {
     }
 
     /**
+     * Get transitive relationships
+     * @param tableBackwardRelations
+     * @returns
+     */
+    private getTransitiveRelations(tableBackwardRelations: RelationDefinition[]): TransitiveRelationDefinition[] {
+        const transitiveRelations: TransitiveRelationDefinition[] = [];
+        tableBackwardRelations.forEach((backwardRelations) => {
+            const transitiveRels = this.forwardRelations[backwardRelations.toTable];
+
+            transitiveRels.forEach((transitiveRelation) => {
+                // don't add transitive self-relations
+                if (transitiveRelation.constraintName === backwardRelations.constraintName) return;
+                const joinTable = backwardRelations.toTable;
+
+                let alias = `${joinTable}_${transitiveRelation.toTable}`;
+
+                // if the joined table column is part of the primary key of the join table then
+                // it is likely the purpose of the join table
+                // So we remove the prefix on the relation name
+                const pk = CardinalityResolver.primaryKey(this.constraints[joinTable]);
+                if (
+                    pk &&
+                    transitiveRelation.joins.length === 1 &&
+                    pk.columnNames.includes(transitiveRelation.joins[0].fromColumn) &&
+                    !this.tableDefinitions[this.tableName][transitiveRelation.toTable]
+                ) {
+                    alias = transitiveRelation.toTable;
+                }
+
+                transitiveRelations.push({
+                    alias: pluralize.plural(alias),
+                    toTable: transitiveRelation.toTable,
+                    joinTable: backwardRelations.toTable,
+                    joinFrom: {
+                        joins: backwardRelations.joins,
+                        constraintName: backwardRelations.constraintName,
+                        toTable: joinTable,
+                    },
+                    joinTo: {
+                        joins: transitiveRelation.joins,
+                        constraintName: transitiveRelation.constraintName,
+                        toTable: transitiveRelation.toTable,
+                    },
+                    type: 'manyToMany',
+                });
+            });
+        });
+        return transitiveRelations;
+    }
+
+    /**
      * Get the schema definition for a table
      */
-    public buildTableDefinition(): TableSchemaDefinition {
+    public buildTableDefinition(options?: { transitiveRelations: boolean }): TableSchemaDefinition {
         const tableConstraints = this.constraints[this.tableName];
         const tableEnums = this.enums[this.tableName];
 
@@ -157,6 +212,11 @@ export class TableSchemaBuilder {
         const tableBackwardRelations = this.backwardRelations[this.tableName] ?? [];
 
         const tableUniqueRelations = this.getTableOneToOneRelationships(tableForwardRelations, tableBackwardRelations);
+
+        let tableTransitiveRelations: TransitiveRelationDefinition[] = [];
+        if (options?.transitiveRelations) {
+            tableTransitiveRelations = this.getTransitiveRelations(tableBackwardRelations);
+        }
 
         const softDelete = TableSchemaBuilder.getSoftDeleteColumn(tableColumns);
 
@@ -176,7 +236,7 @@ export class TableSchemaBuilder {
             primaryKey: CardinalityResolver.primaryKey(tableConstraints),
             keys: tableConstraints,
             uniqueKeyCombinations,
-            relations: [...forwardRels, ...backwardRels],
+            relations: [...forwardRels, ...backwardRels, ...tableTransitiveRelations],
             columns: tableColumns,
             softDelete,
             enums: tableEnums,
