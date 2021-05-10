@@ -1,16 +1,25 @@
-import { ConstraintDefinition } from '../types';
+import { ConstraintDefinition, RelationDefinition } from '../types';
 import _ from 'lodash';
 
 export class CardinalityResolver {
     /**
-     * Check if a given relation is one-to-one (has a unique constraint)
-     * @param joinColumns, columns in the join
-     * @param uniqueKeys
+     * Returns true if the relation is one-to-one
+     * Checks if there is a unique constraint on the forwards side of the relation
+     * @param tableOne
+     * @param tableTwo
+     * @returns
      */
-    public static isOneToOneRelation(joinColumns: string[], uniqueKeys: string[][]): boolean {
+    public static isOneToOneRelation(table: {
+        forwardRelation: RelationDefinition;
+        keys: ConstraintDefinition[];
+    }): boolean {
+        if (table.forwardRelation.type !== 'belongsTo') throw new Error('Must give the forward relation');
+
         // check if there is a unique constraint on the join. If so, it is 1 - 1;
-        // TODO:- what if unique constraint is only on part of the join (would relation be over constrained?)
-        for (let key of uniqueKeys) {
+        const joinColumns = table.forwardRelation.joins.map((j) => j.fromColumn).sort();
+        const uniqueKeys = CardinalityResolver.getUniqueKeyCombinations(table.keys);
+
+        for (const key of uniqueKeys) {
             if (_.isEqual(joinColumns, key)) return true;
         }
         return false;

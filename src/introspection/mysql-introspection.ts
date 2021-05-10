@@ -16,16 +16,16 @@ import { Introspection } from './introspection';
 import _ from 'lodash';
 
 export class MySQLIntrospection extends Introspection {
-    protected readonly schemaName: string;
+    protected readonly databaseName: string;
     private knex: Knex;
     protected logLevel: LogLevel;
 
-    public constructor(params: { knex: Knex; schemaName: string; logLevel: LogLevel }) {
+    public constructor(params: { knex: Knex; databaseName: string; logLevel: LogLevel }) {
         super();
-        const { knex, schemaName, logLevel } = params;
+        const { knex, databaseName, logLevel } = params;
         this.knex = knex;
-        if (schemaName) this.schemaName = schemaName;
-        else this.schemaName = 'public';
+        if (databaseName) this.databaseName = databaseName;
+        else this.databaseName = 'public';
         this.logLevel = logLevel;
     }
 
@@ -128,7 +128,7 @@ export class MySQLIntrospection extends Introspection {
             this.knex('information_schema.columns')
                 .select('table_name', 'column_name', 'column_type')
                 .whereIn('data_type', ['enum', 'set'])
-                .where({ table_schema: this.schemaName })
+                .where({ table_schema: this.databaseName })
                 .whereIn('table_name', tables),
         );
 
@@ -151,27 +151,6 @@ export class MySQLIntrospection extends Introspection {
         return results;
     }
 
-    // /**
-    //  * Get the enum types for a table
-    //  * Note: - SET type is supported as well as ENUM but should rarely be used
-    //  */
-    // public async getEnumTypesForTable(tables: string[]): Promise<TableMap<EnumDefinitions>> {
-    //     const rawEnumRecords = await this.knex('information_schema.columns')
-    //         .select('table_name', 'column_name', 'column_type')
-    //         .whereIn('data_type', ['enum', 'set'])
-    //         .where({ table_schema: this.schemaName, table_name: tableName });
-
-    //     rawEnumRecords.forEach((enumItem: { table_name: string; column_name: string; column_type: string }) => {
-    //         const enumName = MySQLIntrospection.getEnumName(enumItem.table_name, enumItem.column_name);
-    //         enums[enumName] = {
-    //             columnName: enumItem.column_name,
-    //             enumName,
-    //             values: MySQLIntrospection.parseMysqlEnumeration(enumItem.column_type).sort(),
-    //         };
-    //     });
-    //     return enums;
-    // }
-
     /**
      * Get the type definition for a table
      * @param tables
@@ -193,7 +172,7 @@ export class MySQLIntrospection extends Introspection {
         const rows: RowType[] = await this.query(
             this.knex('information_schema.columns')
                 .select('column_name', 'data_type', 'is_nullable', 'column_default', 'extra', 'table_name')
-                .where({ table_schema: this.schemaName })
+                .where({ table_schema: this.databaseName })
                 .whereIn('table_name', tables),
         );
 
@@ -216,41 +195,6 @@ export class MySQLIntrospection extends Introspection {
         });
         return results;
     }
-
-    // /**
-    //  * Get the type definition for a table
-    //  * @param tableName
-    //  * @param enumTypes
-    //  */
-    // public async getTableTypes(tableName: string, enumTypes: EnumDefinitions): Promise<TableColumnsDefinition> {
-    //     let tableDefinition: TableColumnsDefinition = {};
-
-    //     const tableColumns = await this.knex('information_schema.columns')
-    //         .select('column_name', 'data_type', 'is_nullable', 'column_default', 'extra')
-    //         .where({ table_name: tableName, table_schema: this.schemaName });
-
-    //     tableColumns.map(
-    //         (schemaItem: {
-    //             column_name: string;
-    //             data_type: string;
-    //             is_nullable: string;
-    //             column_default: string | null;
-    //             extra: string;
-    //         }) => {
-    //             const columnName = schemaItem.column_name;
-    //             const dbType = schemaItem.data_type;
-    //             const extra = schemaItem.extra === '' ? null : schemaItem.extra;
-    //             tableDefinition[columnName] = {
-    //                 dbType,
-    //                 columnDefault: schemaItem.column_default || extra,
-    //                 nullable: schemaItem.is_nullable === 'YES',
-    //                 columnName,
-    //                 tsType: this.getTsTypeForColumn(tableName, columnName, dbType, enumTypes),
-    //             };
-    //         },
-    //     );
-    //     return tableDefinition;
-    // }
 
     /**
      * Get constraints for tables
@@ -281,8 +225,9 @@ export class MySQLIntrospection extends Introspection {
                     this.andOn('key_usage.table_name', '=', 'constraints.table_name');
                 })
 
-                .where({ 'key_usage.table_schema': this.schemaName })
-                .whereIn('key_usage.table_name', tables),
+                .where({ 'key_usage.table_schema': this.databaseName })
+                .whereIn('key_usage.table_name', tables)
+                .orderBy('constraint_name', 'asc'),
         );
 
         const results: TableMap<ConstraintDefinition[]> = {};
@@ -310,42 +255,6 @@ export class MySQLIntrospection extends Introspection {
         return results;
     }
 
-    // public async getTableConstraints(tableName: string): Promise<ConstraintDefinition[]> {
-    //     const rows = await this.knex('information_schema.key_column_usage as key_usage')
-    //         .select(
-    //             'key_usage.table_name',
-    //             'key_usage.column_name',
-    //             'key_usage.constraint_name',
-    //             'constraints.constraint_type',
-    //         )
-    //         .distinct()
-    //         .leftJoin('information_schema.table_constraints as constraints', function () {
-    //             this.on('key_usage.constraint_name', '=', 'constraints.constraint_name');
-    //             this.andOn('key_usage.constraint_schema', '=', 'constraints.constraint_schema');
-    //             this.andOn('key_usage.table_name', '=', 'constraints.table_name');
-    //         })
-
-    //         .where({ 'key_usage.table_name': tableName, 'key_usage.table_schema': this.schemaName });
-
-    //     // group by constraint name
-    //     const columnMap = _.groupBy(rows, (k) => k.constraint_name);
-    //     const constraintMap = _.keyBy(rows, (k) => k.constraint_name);
-
-    //     const constraintDefinitions: ConstraintDefinition[] = [];
-
-    //     Object.values(constraintMap).forEach((constraint) => {
-    //         const { constraint_type, constraint_name } = constraint;
-    //         const columns = columnMap[constraint_name];
-
-    //         constraintDefinitions.push({
-    //             constraintName: constraint_name,
-    //             constraintType: constraint_type,
-    //             columnNames: columns.map((c) => c.column_name).sort(),
-    //         });
-    //     });
-    //     return constraintDefinitions;
-    // }
-
     /**
      * Get all relations where the given table holds the constraint (N - 1 or 1 - 1) i.e. Posts.user_id -> Users.user_id
      * @param tables
@@ -368,8 +277,10 @@ export class MySQLIntrospection extends Introspection {
                     'referenced_table_name',
                     'referenced_column_name',
                 )
-                .where({ table_schema: this.schemaName })
-                .whereIn('table_name', tables),
+                .where({ table_schema: this.databaseName })
+                .whereIn('table_name', tables)
+                .orderBy('column_name', 'asc')
+                .orderBy('referenced_column_name', 'asc'),
         );
 
         const results: TableMap<RelationDefinition[]> = {};
@@ -386,6 +297,7 @@ export class MySQLIntrospection extends Introspection {
                         toTable: referenced_table_name,
                         alias: referenced_table_name,
                         joins: [],
+                        constraintName: constraint_name,
                         type: 'belongsTo', // default always N - 1
                     };
                 relations[constraint_name].joins.push({
@@ -398,36 +310,6 @@ export class MySQLIntrospection extends Introspection {
 
         return results;
     }
-
-    // /**
-    //  * Get all relations where the given table holds the constraint (N - 1 or 1 - 1) i.e. Posts.user_id -> Users.user_id
-    //  * @param tableName
-    //  */
-    // public async getForwardRelations(tableName: string): Promise<RelationDefinition[]> {
-    //     const rows = await this.knex('information_schema.key_column_usage')
-    //         .select('table_name', 'column_name', 'constraint_name', 'referenced_table_name', 'referenced_column_name')
-    //         .where({ table_name: tableName, table_schema: this.schemaName });
-
-    //     // group by constraint name to capture multiple relations to same table
-    //     let relations: { [constraintName: string]: RelationDefinition } = {};
-    //     rows.forEach((row) => {
-    //         const { column_name, referenced_table_name, referenced_column_name, constraint_name } = row;
-    //         if (referenced_table_name == null || referenced_column_name == null) return;
-
-    //         if (!relations[constraint_name])
-    //             relations[constraint_name] = {
-    //                 toTable: referenced_table_name,
-    //                 alias: referenced_table_name,
-    //                 joins: [],
-    //                 type: 'belongsTo', // default to N - 1
-    //             };
-    //         relations[constraint_name].joins.push({
-    //             fromColumn: column_name,
-    //             toColumn: referenced_column_name,
-    //         });
-    //     });
-    //     return Object.values(relations);
-    // }
 
     /**
      * Get all relations where the given table does not hold the constraint (1 - N or 1 - 1) i.e. Users.user_id <- Posts.author_id
@@ -451,8 +333,10 @@ export class MySQLIntrospection extends Introspection {
                     'referenced_table_name as table_name',
                     'referenced_column_name as column_name',
                 )
-                .where({ table_schema: this.schemaName })
-                .whereIn('information_schema.key_column_usage.referenced_table_name', tables),
+                .where({ table_schema: this.databaseName })
+                .whereIn('information_schema.key_column_usage.referenced_table_name', tables)
+                .orderBy('column_name', 'asc')
+                .orderBy('referenced_column_name', 'asc'),
         );
 
         const results: TableMap<RelationDefinition[]> = {};
@@ -469,6 +353,7 @@ export class MySQLIntrospection extends Introspection {
                         toTable: referenced_table_name,
                         alias: referenced_table_name,
                         joins: [],
+                        constraintName: constraint_name,
                         type: 'hasMany', // default always 1 - N
                     };
                 relations[constraint_name].joins.push({
@@ -482,36 +367,6 @@ export class MySQLIntrospection extends Introspection {
         return results;
     }
 
-    // /**
-    //  * Get all relations where the given table does not hold the constraint (1 - N or 1 - 1) i.e. Users.user_id <- Posts.author_id
-    //  * @param tableName
-    //  */
-    // public async getBackwardRelations(tableName: string): Promise<RelationDefinition[]> {
-    //     const rows = await this.knex('information_schema.key_column_usage')
-    //         .select('table_name', 'column_name', 'constraint_name', 'referenced_table_name', 'referenced_column_name')
-    //         .where({ referenced_table_name: tableName, table_schema: this.schemaName });
-
-    //     // group by constraint name to capture multiple relations to same table
-    //     let relations: { [constraintName: string]: RelationDefinition } = {};
-    //     rows.forEach((row) => {
-    //         const { column_name, table_name, referenced_column_name, constraint_name } = row;
-    //         if (table_name == null || column_name == null) return;
-
-    //         if (!relations[constraint_name])
-    //             relations[constraint_name] = {
-    //                 toTable: table_name,
-    //                 alias: table_name,
-    //                 joins: [],
-    //                 type: 'hasMany', // default to 1 - N
-    //             };
-    //         relations[constraint_name].joins.push({
-    //             fromColumn: referenced_column_name,
-    //             toColumn: column_name,
-    //         });
-    //     });
-    //     return Object.values(relations);
-    // }
-
     /**
      * Get a list of all table names in schema
      */
@@ -519,7 +374,7 @@ export class MySQLIntrospection extends Introspection {
         const schemaTables = await this.query(
             this.knex('information_schema.columns')
                 .select('table_name')
-                .where({ table_schema: this.schemaName })
+                .where({ table_schema: this.databaseName })
                 .groupBy('table_name'),
         );
 

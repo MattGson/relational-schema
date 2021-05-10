@@ -2,7 +2,7 @@ import 'jest-extended';
 import { PostgresIntrospection } from 'src/introspection';
 import { Introspection } from 'src/introspection/introspection';
 import { LogLevel } from 'src/types';
-import { closeConnection, DB, describeif, knex, openConnection } from 'test/setup';
+import { closeConnection, DB, describeif, knex, openConnection } from 'test/helpers';
 
 describeif(DB() === 'pg')('PostgresIntrospection', () => {
     let intro: Introspection;
@@ -245,7 +245,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
     });
     describe('getBackwardRelations', () => {
         it('Loads all relations on foreign keys referencing the table', async (): Promise<void> => {
-            const { teams } = await intro.getBackwardRelations(['teams', 'users']);
+            const { teams, posts } = await intro.getBackwardRelations(['teams', 'users', 'posts']);
             expect(teams).toIncludeAllMembers([
                 expect.objectContaining({
                     toTable: 'team_members',
@@ -259,6 +259,15 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                     type: 'hasMany',
                 }),
             ]);
+
+            expect(posts).toIncludeAllMembers([
+                expect.objectContaining({
+                    toTable: 'team_members',
+                    alias: 'team_members',
+                    joins: [{ toColumn: 'member_post_id', fromColumn: 'post_id' }],
+                    type: 'hasMany',
+                }),
+            ]);
         });
         it('Loads multiple relations from the same table', async (): Promise<void> => {
             const { users } = await intro.getBackwardRelations(['users', 'posts']);
@@ -268,8 +277,8 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                     alias: 'posts',
                     joins: [
                         {
-                            toColumn: 'user_id',
-                            fromColumn: 'author_id',
+                            fromColumn: 'user_id',
+                            toColumn: 'author_id',
                         },
                     ],
                     type: 'hasMany',
@@ -279,8 +288,8 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                     alias: 'posts',
                     joins: [
                         {
-                            toColumn: 'user_id',
-                            fromColumn: 'co_author',
+                            fromColumn: 'user_id',
+                            toColumn: 'co_author',
                         },
                     ],
                     type: 'hasMany',
@@ -314,8 +323,8 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                     alias: 'users',
                     joins: [
                         {
-                            toColumn: 'user_id',
-                            fromColumn: 'best_friend_id',
+                            fromColumn: 'user_id',
+                            toColumn: 'best_friend_id',
                         },
                     ],
                 }),

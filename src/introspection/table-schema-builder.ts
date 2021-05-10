@@ -30,26 +30,25 @@ export class TableSchemaBuilder {
      * Also handle any conflicts for columns:related-tables with the same name.
      * @param relation
      * @param columns
-     * @param uniqueKeys
+     * @param uniqueRelations - one to one relations
      */
     private formatForwardRelation(
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
-        uniqueKeys: string[][],
+        uniqueRelations: RelationDefinition[],
     ): RelationDefinition {
         // multiple columns so use the table-name instead
         if (relation.joins.length > 1) {
             relation.alias = relation.toTable.replace(/s+$/, '');
         }
-        // single column so just remove plural etc
+        // single column so just remove suffix etc
         else {
             relation.alias = relation.joins[0].fromColumn.replace('_id', '');
         }
-        if (columns[relation.alias]) relation.alias += '_'; // handle any conflicts
+        if (columns[relation.alias]) relation.alias += '_'; // handle any naming conflicts
 
-        // check if there is a unique constraint on the join. If so, it is 1 - 1;
-        const joins = relation.joins.map((j) => j.fromColumn).sort();
-        if (CardinalityResolver.isOneToOneRelation(joins, uniqueKeys)) relation.type = 'hasOne';
+        // check if  it is 1 - 1;
+        if (uniqueRelations.find((r) => r.constraintName === relation.constraintName)) relation.type = 'hasOne';
 
         return relation;
     }
@@ -63,28 +62,27 @@ export class TableSchemaBuilder {
      * @param relation
      * @param columns
      * @param relations, other relations
+     * @param uniqueRelations, unique relations for the table (one-to-one)
      */
     private formatBackwardRelationship(
         relation: RelationDefinition,
         columns: TableColumnsDefinition,
-        relations: RelationDefinition[],
-        relatedTableConstraints: ConstraintDefinition[],
+        tableRelations: RelationDefinition[],
+        uniqueRelations: RelationDefinition[],
     ): RelationDefinition {
         // check if table name will conflict with other relations on the same table
         let relationCount = 0;
-        for (const other_relation of relations) {
+        for (const other_relation of tableRelations) {
             if (other_relation.toTable === relation.toTable) relationCount += 1;
         }
+
         if (relationCount > 1) {
+            // alias with the foreign key name and the table
             relation.alias = `${relation.joins[0].toColumn.replace('_id', '')}_${relation.toTable}`;
         }
 
-        // check if there is a unique constraint on the join. If so, it is (1 - 1);
-        // const relatedTableConstraints = await this.introspection.getTableConstraints(relation.toTable);
-        const uniqueKeys = CardinalityResolver.getUniqueKeyCombinations(relatedTableConstraints);
-
-        const joins = relation.joins.map((j) => j.toColumn).sort();
-        if (CardinalityResolver.isOneToOneRelation(joins, uniqueKeys)) {
+        // check if it is (1 - 1);
+        if (uniqueRelations.find((r) => r.constraintName === relation.constraintName)) {
             relation.type = 'hasOne';
             relation.alias = relation.alias.replace(/s+$/, ''); // remove trailing s
         }
@@ -115,6 +113,39 @@ export class TableSchemaBuilder {
     }
 
     /**
+     * Get the unique (one-to-one) relations for the table
+     * @param tableForwardRelations
+     * @param tableBackwardRelations
+     * @returns
+     */
+    private getTableOneToOneRelationships(
+        tableForwardRelations: RelationDefinition[],
+        tableBackwardRelations: RelationDefinition[],
+    ): RelationDefinition[] {
+        const uniqueRelations: RelationDefinition[] = [];
+
+        tableForwardRelations.forEach((forwardRelation) => {
+            const keys = this.constraints[this.tableName];
+            if (CardinalityResolver.isOneToOneRelation({ forwardRelation, keys })) {
+                uniqueRelations.push(forwardRelation);
+            }
+        });
+
+        tableBackwardRelations.forEach((backwardRelation) => {
+            // get the other (forward) side of the relation to check cardinalityu
+            const keys = this.constraints[backwardRelation.toTable];
+            const [forwardRelation] = this.forwardRelations[backwardRelation.toTable].filter(
+                (r) => r.toTable === this.tableName,
+            );
+
+            if (CardinalityResolver.isOneToOneRelation({ forwardRelation, keys })) {
+                uniqueRelations.push(backwardRelation);
+            }
+        });
+        return uniqueRelations;
+    }
+
+    /**
      * Get the schema definition for a table
      */
     public buildTableDefinition(): TableSchemaDefinition {
@@ -125,6 +156,8 @@ export class TableSchemaBuilder {
         const tableForwardRelations = this.forwardRelations[this.tableName] ?? [];
         const tableBackwardRelations = this.backwardRelations[this.tableName] ?? [];
 
+        const tableUniqueRelations = this.getTableOneToOneRelationships(tableForwardRelations, tableBackwardRelations);
+
         const softDelete = TableSchemaBuilder.getSoftDeleteColumn(tableColumns);
 
         // constraints
@@ -132,11 +165,11 @@ export class TableSchemaBuilder {
 
         // relations
         const forwardRels = tableForwardRelations.map((r) =>
-            this.formatForwardRelation(r, tableColumns, uniqueKeyCombinations),
+            this.formatForwardRelation(r, tableColumns, tableUniqueRelations),
         );
 
         const backwardRels = tableBackwardRelations.map((r) =>
-            this.formatBackwardRelationship(r, tableColumns, tableBackwardRelations, this.constraints[r.toTable]),
+            this.formatBackwardRelationship(r, tableColumns, tableBackwardRelations, tableUniqueRelations),
         );
 
         return {

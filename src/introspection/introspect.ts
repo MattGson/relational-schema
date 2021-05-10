@@ -21,7 +21,7 @@ export const introspectSchema = async (params: {
     let DB: Introspection;
 
     if (conn.client === 'mysql') {
-        DB = new MySQLIntrospection({ knex, schemaName: database, logLevel: logLevel ?? LogLevel.info });
+        DB = new MySQLIntrospection({ knex, databaseName: database, logLevel: logLevel ?? LogLevel.info });
     } else if (conn.client === 'pg') {
         DB = new PostgresIntrospection({ knex, schemaName: schema, logLevel: logLevel ?? LogLevel.info });
     } else {
