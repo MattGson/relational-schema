@@ -1,3 +1,10 @@
+## [0.2.3](https://github.com/MattGson/relational-schema/compare/v0.2.2...v0.2.3) (2021-05-10)
+
+
+### Bug Fixes
+
+* **introspect:** fixed relations introspection. Cardinality and column naming are consistent now ([7b4aeb2](https://github.com/MattGson/relational-schema/commit/7b4aeb261d8611a8fdcc1ae51070c4c92e01001a))
+
 ## [0.2.2](https://github.com/MattGson/relational-schema/compare/v0.2.1...v0.2.2) (2021-05-06)
 
 
