@@ -3,6 +3,8 @@ import { introspectSchema } from './introspection/introspect';
 import { writeFormattedFile } from './printer';
 import { logger } from './lib/logger';
 
+export * from './types';
+
 // **************************
 // generate schema
 // **************************
