@@ -31,7 +31,7 @@ export async function generate(args: {
             await writeFormattedFile({
                 prettierConfig,
                 content: `
-                 export const schema = ${JSON.stringify(schema)}
+                 export default ${JSON.stringify(schema)}
             `,
                 directory: outdir,
                 filename: 'relational-schema',
@@ -53,7 +53,7 @@ export async function generate(args: {
             await writeFormattedFile({
                 prettierConfig,
                 content: `
-                     export const schema = ${JSON.stringify(schema)}
+                     export default ${JSON.stringify(schema)}
                      `,
                 directory: outdir,
                 filename: 'relational-schema',
