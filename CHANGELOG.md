@@ -1,3 +1,12 @@
+## [0.4.1](https://github.com/MattGson/relational-schema/compare/v0.4.0...v0.4.1) (2021-05-11)
+
+
+### Bug Fixes
+
+* **config:** fixes package json ([aecde0b](https://github.com/MattGson/relational-schema/commit/aecde0b8de0d9246b0246acb84f620b71977e989))
+* **types:** added index types ([35604c6](https://github.com/MattGson/relational-schema/commit/35604c608d4b159927f480cafedf70cbd8f203df))
+* **types:** included types export ([a4d63c9](https://github.com/MattGson/relational-schema/commit/a4d63c97529da88e005a9806508f533ba977b5f2))
+
 # [0.4.0](https://github.com/MattGson/relational-schema/compare/v0.3.1...v0.4.0) (2021-05-11)
 
 
