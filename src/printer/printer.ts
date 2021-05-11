@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import { format as prettify } from 'prettier';
 import { join } from 'path';
 import { Format } from '../types';
+import { logger } from '../lib/logger';
 
 const prettierDefault = {
     semi: true,
@@ -36,10 +37,10 @@ function getPrettierConfig(file?: string) {
     }
 
     if (config) {
-        console.log('Using custom prettier config from file ', file);
+        logger.info('Using custom prettier config from file ', file);
         return config;
     }
-    console.log('Using default prettier config');
+    logger.info('Using default prettier config');
     return prettierDefault;
 }
 

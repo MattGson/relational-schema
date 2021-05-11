@@ -13,6 +13,7 @@ import {
 } from '../types';
 import Knex = require('knex');
 import { Introspection } from './introspection';
+import { logger } from '../lib/logger';
 
 export class PostgresIntrospection extends Introspection {
     protected readonly schemaName: string;
@@ -91,7 +92,7 @@ export class PostgresIntrospection extends Introspection {
                 if (customTypes && customTypes[dbType]) {
                     return dbType;
                 } else {
-                    console.log(
+                    logger.warn(
                         `Type [${columnName}] has been mapped to [any] because no specific type has been found.`,
                     );
                     return NonComparable.any;

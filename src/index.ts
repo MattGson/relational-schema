@@ -1,6 +1,7 @@
 import { BuilderOptions, ConnectionConfig, Format, LogLevel } from './types';
 import { introspectSchema } from './introspection/introspect';
 import { writeFormattedFile } from './printer';
+import { logger } from './lib/logger';
 
 // **************************
 // generate schema
@@ -19,7 +20,7 @@ export async function generate(args: {
     options: BuilderOptions;
 }): Promise<ConnectionConfig> {
     const { conn, outdir, format, prettierConfig, logLevel, options } = args;
-    console.log(`Generating for db: ${conn.client} - ${conn.connection.database}`);
+    logger.info(`Generating for db: ${conn.client} - ${conn.connection.database}`);
 
     const schema = await introspectSchema({ conn, logLevel, options });
 
@@ -68,6 +69,6 @@ export async function generate(args: {
             });
     }
 
-    console.log(`Generated for ${Object.keys(schema.tables).length} tables in ${outdir}`);
+    logger.info(`Generated for ${Object.keys(schema.tables).length} tables in ${outdir}`);
     return conn;
 }

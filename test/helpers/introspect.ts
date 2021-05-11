@@ -2,6 +2,7 @@ import { generate } from 'src/index';
 import { Format, LogLevel } from 'src/types';
 import { buildDBSchemas, closeConnection } from './build-test-db';
 import path from 'path';
+import { logger } from 'src/lib/logger';
 
 const outdir = path.join(__dirname, '../generated');
 
@@ -42,6 +43,6 @@ buildDBSchemas()
     )
     .then(() => closeConnection())
     .catch((e) => {
-        console.log(e);
+        logger.error(e);
         return closeConnection();
     });
