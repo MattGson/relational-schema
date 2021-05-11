@@ -13,3 +13,7 @@ relational-schema-config.json
 .travis.yml
 .prettierrc.js
 .eslintrc.js
+.releaserc.json
+docker-compose.*
+relation-config.json
+node_modules

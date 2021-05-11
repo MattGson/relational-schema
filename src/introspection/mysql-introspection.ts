@@ -14,6 +14,7 @@ import {
 import Knex = require('knex');
 import { Introspection } from './introspection';
 import _ from 'lodash';
+import { logger } from '../lib/logger';
 
 export class MySQLIntrospection extends Introspection {
     protected readonly databaseName: string;
@@ -86,7 +87,7 @@ export class MySQLIntrospection extends Introspection {
                 if (customTypes[possibleEnum]) {
                     return possibleEnum;
                 } else {
-                    console.log(
+                    logger.warn(
                         `Type [${columnName}] has been mapped to [any] because no specific type has been found.`,
                     );
                     return NonComparable.any;

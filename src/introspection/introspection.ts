@@ -1,5 +1,6 @@
 import Knex from 'knex';
 import _ from 'lodash';
+import { logger } from '../lib/logger';
 import {
     ColumnType,
     ConstraintDefinition,
@@ -35,7 +36,7 @@ export abstract class Introspection {
      */
     protected async query<T>(query: Knex.QueryBuilder<T>): Promise<T> {
         if (this.logLevel === LogLevel.debug) {
-            console.log('Executing query: ', query.toSQL());
+            logger.debug('Executing query: ', query.toSQL());
         }
         return await query;
     }
