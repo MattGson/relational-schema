@@ -1,3 +1,10 @@
+# [0.4.0](https://github.com/MattGson/relational-schema/compare/v0.3.1...v0.4.0) (2021-05-11)
+
+
+### Features
+
+* **cli:** print a relation tree from a table ([f73d689](https://github.com/MattGson/relational-schema/commit/f73d689cb1849427518f319e88c253e40b296682)), closes [#13](https://github.com/MattGson/relational-schema/issues/13)
+
 ## [0.3.1](https://github.com/MattGson/relational-schema/compare/v0.3.0...v0.3.1) (2021-05-10)
 
 
