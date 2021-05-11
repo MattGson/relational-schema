@@ -1,3 +1,10 @@
+## [0.4.2](https://github.com/MattGson/relational-schema/compare/v0.4.1...v0.4.2) (2021-05-11)
+
+
+### Bug Fixes
+
+* **gen:** makes export format consistent across file formats ([3a3867f](https://github.com/MattGson/relational-schema/commit/3a3867fb6a59a877bc43f7eaf7289a3eb380de99))
+
 ## [0.4.1](https://github.com/MattGson/relational-schema/compare/v0.4.0...v0.4.1) (2021-05-11)
 
 
