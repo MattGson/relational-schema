@@ -21,10 +21,6 @@ sidebar_label: Introduction
 [Relational-schema](https://mattgson.github.io/relational-schema/) is a utility package to generate a semantic,
 complete schema of a relational database (PostgreSQL, MySQL) in Javascript, JSON and other formats.
 
-Relational-schema is built on top of trusted open-source projects:
-
--   [Knex](https://github.com/knex/knex)
-
 Works with MySQL and PostgreSQL. SQLite coming soon.
 
 Full docs [here](https://mattgson.github.io/relational-schema/)
@@ -52,11 +48,12 @@ Projects using Relational-schema
 npm install relational-schema
 ```
 
-Create a config file `introspect-config.json`
+Create a config file `relation-config.json`
 
 ```json
 {
     "host": "127.0.0.1",
+    "client": "mysql",
     "port": 3306,
     "user": "root",
     "password": "secure",
@@ -67,7 +64,7 @@ Create a config file `introspect-config.json`
 ```
 
 ```
-relational-schema introspect
+relations introspect
 ```
 
 The schema will be generated in `outdir` in the chosen format.
@@ -80,12 +77,12 @@ The schema will be generated in `outdir` in the chosen format.
 
 -   columns (names, types, default values, nullability...)
 -   keys and constraints
--   unique-ness
+-   uniqueness
 -   Typescript type mappings
--   table relations (including direction, transitive relations)
--   human readable relation alias'
+-   table relations (including direction, cardinality, transitive (m2m)...)
+-   humanized relation alias' based on cardinality
 -   soft-delete idenfication
--   enums
+-   custom types (enums, sets)
 
 ---
 
@@ -94,7 +91,7 @@ The schema will be generated in `outdir` in the chosen format.
 ```json
 {
     "database": "tests",
-    "schema": "public",
+    "schema": "tests",
     "generatedAt": "2021-04-21T08:41:31.747Z",
     "tables": {
         "teams": {
@@ -603,3 +600,7 @@ The schema will be generated in `outdir` in the chosen format.
     }
 }
 ```
+
+Relational-schema is built on top of trusted open-source projects:
+
+-   [Knex](https://github.com/knex/knex)
