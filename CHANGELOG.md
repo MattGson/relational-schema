@@ -1,3 +1,10 @@
+## [0.4.3](https://github.com/MattGson/relational-schema/compare/v0.4.2...v0.4.3) (2021-05-26)
+
+
+### Bug Fixes
+
+* **cardinality-resolver:** fixes bug with finding one-to-one relations ([341d4ae](https://github.com/MattGson/relational-schema/commit/341d4ae8ad4debe3ecb2a95c5427ef88336dda4a))
+
 ## [0.4.2](https://github.com/MattGson/relational-schema/compare/v0.4.1...v0.4.2) (2021-05-11)
 
 
