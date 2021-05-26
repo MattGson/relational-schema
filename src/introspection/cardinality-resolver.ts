@@ -13,7 +13,11 @@ export class CardinalityResolver {
         forwardRelation: RelationDefinition;
         keys: ConstraintDefinition[];
     }): boolean {
-        if (table.forwardRelation.type !== 'belongsTo') throw new Error('Must give the forward relation');
+        if (table.forwardRelation.type === 'hasOne') return true;
+        if (table.forwardRelation.type !== 'belongsTo')
+            throw new Error(
+                `Finding relation cardinality - Expected forward relation of type "belongsTo" but received type "${table.forwardRelation.type}"`,
+            );
 
         // check if there is a unique constraint on the join. If so, it is 1 - 1;
         const joinColumns = table.forwardRelation.joins.map((j) => j.fromColumn).sort();
