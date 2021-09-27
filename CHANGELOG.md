@@ -1,3 +1,10 @@
+## [0.4.4](https://github.com/MattGson/relational-schema/compare/v0.4.3...v0.4.4) (2021-09-27)
+
+
+### Bug Fixes
+
+* **introspect:** fixes crash on empty contraints list ([8c23049](https://github.com/MattGson/relational-schema/commit/8c23049220accd6727d559cdc23a22ae48aeeffe))
+
 ## [0.4.3](https://github.com/MattGson/relational-schema/compare/v0.4.2...v0.4.3) (2021-05-26)
 
 
