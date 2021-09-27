@@ -136,13 +136,13 @@ export class TableSchemaBuilder {
         });
 
         tableBackwardRelations.forEach((backwardRelation) => {
-            // get the other (forward) side of the relation to check cardinalityu
+            // get the other (forward) side of the relation to check cardinality
             const keys = this.constraints[backwardRelation.toTable];
-            const [forwardRelation] = this.forwardRelations[backwardRelation.toTable].filter(
+            const forwardRelation = this.forwardRelations[backwardRelation.toTable]?.find(
                 (r) => r.toTable === this.tableName,
             );
 
-            if (CardinalityResolver.isOneToOneRelation({ forwardRelation, keys })) {
+            if (forwardRelation && CardinalityResolver.isOneToOneRelation({ forwardRelation, keys })) {
                 uniqueRelations.push(backwardRelation);
             }
         });
@@ -204,7 +204,7 @@ export class TableSchemaBuilder {
      * Get the schema definition for a table
      */
     public buildTableDefinition(options?: { transitiveRelations: boolean }): TableSchemaDefinition {
-        const tableConstraints = this.constraints[this.tableName];
+        const tableConstraints = this.constraints[this.tableName] ?? [];
         const tableEnums = this.enums[this.tableName];
 
         const tableColumns = this.tableDefinitions[this.tableName];
