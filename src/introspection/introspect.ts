@@ -4,6 +4,7 @@ import { Introspection } from './introspection';
 import { PostgresIntrospection } from './postgres-introspection';
 import { MySQLIntrospection } from './mysql-introspection';
 import { TableSchemaBuilder } from './table-schema-builder';
+import { logger } from '../lib/logger';
 
 /**
  * Build schema from database connection
@@ -41,13 +42,24 @@ export const introspectSchema = async (params: {
         tables: {},
     };
 
+    logger.debug(`Introspecting ${JSON.stringify(relationalSchema)}`);
+
     try {
         const tables = await DB.getSchemaTables();
+        logger.debug(`Found ${tables.length} tables`);
         const enums = await DB.getEnumTypesForTables(tables);
+        logger.debug(`Introspected ${Object.entries(enums).length} enums`);
         const definitions = await DB.getTableTypes(tables, enums);
+        logger.debug(`Introspected ${Object.entries(definitions).length} tables`);
         const constraints = await DB.getTableConstraints(tables);
+        logger.debug(`Introspected ${Object.entries(constraints).length} constraints`);
+
         const forward = await DB.getForwardRelations(tables);
         const backwards = await DB.getBackwardRelations(tables);
+
+        logger.debug(
+            `Introspected ${Object.entries(forward).length + Object.entries(backwards).length} foreign key relations`,
+        );
 
         tables.forEach((table) => {
             relationalSchema.tables[table] = new TableSchemaBuilder(
@@ -59,6 +71,8 @@ export const introspectSchema = async (params: {
                 backwards,
             ).buildTableDefinition(options);
         });
+
+        logger.debug(`Built ${Object.entries(relationalSchema.tables).length} table schemas`);
 
         await knex.destroy();
     } catch (e) {

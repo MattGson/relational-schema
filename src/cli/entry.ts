@@ -35,6 +35,7 @@ yargs(hideBin(process.argv))
                     user: { type: 'string', default: 'root' },
                     password: { type: 'string', default: '' },
                     database: { type: 'string', default: 'public' },
+                    schema: { type: 'string', default: 'public' },
                     outdir: { type: 'string', default: './gen' },
                     format: { choices: formats, default: Format.json },
                     prettierConfig: { type: 'string', description: 'Path to a prettierrc file' },
@@ -104,6 +105,7 @@ async function introspect(args: any) {
                 user: args.user,
                 password: args.password,
                 database: args.database,
+                schema: args.schema,
             },
         };
 
@@ -122,6 +124,7 @@ async function introspect(args: any) {
         await generate({ conn, outdir: GENERATED_DIR, format, prettierConfig, logLevel: logs, options });
     } catch (e) {
         logger.error(e);
+        logger.debug(e.stack);
         logger.info('Use: "relation -h" to see help');
         process.exit(1);
     }
