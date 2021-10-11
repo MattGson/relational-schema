@@ -84,11 +84,12 @@ export interface EnumDefinition {
 }
 
 export type ConstraintType = 'PRIMARY KEY' | 'FOREIGN KEY' | 'UNIQUE';
-
 export interface ConstraintDefinition {
     columnNames: string[];
     constraintName: string;
     constraintType: ConstraintType;
+    on_update?: string;
+    on_delete?: string;
 }
 
 export interface TableSchemaDefinition {
