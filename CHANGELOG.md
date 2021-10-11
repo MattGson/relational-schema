@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/MattGson/relational-schema/compare/v0.4.4...v0.5.0) (2021-10-11)
+
+
+### Features
+
+* **constraint-actions:** adds schema for referential constraint actions (on delete, on update) ([78d39b6](https://github.com/MattGson/relational-schema/commit/78d39b627803867a4e4d3db8149ed3cbeec93127))
+
 ## [0.4.4](https://github.com/MattGson/relational-schema/compare/v0.4.3...v0.4.4) (2021-09-27)
 
 
