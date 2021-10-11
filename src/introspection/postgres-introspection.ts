@@ -199,6 +199,8 @@ export class PostgresIntrospection extends Introspection {
             column_name: string;
             constraint_name: string;
             constraint_type: ConstraintType;
+            update_rule: string;
+            delete_rule: string;
         };
 
         const rows: RowType[] = await this.query(
@@ -208,12 +210,18 @@ export class PostgresIntrospection extends Introspection {
                     'key_usage.column_name',
                     'key_usage.constraint_name',
                     'constraints.constraint_type',
+                    'referential_constraints.update_rule',
+                    'referential_constraints.delete_rule',
                 )
                 .distinct()
                 .leftJoin('information_schema.table_constraints as constraints', function () {
                     this.on('key_usage.constraint_name', '=', 'constraints.constraint_name');
                     this.andOn('key_usage.constraint_schema', '=', 'constraints.constraint_schema');
                     this.andOn('key_usage.table_name', '=', 'constraints.table_name');
+                })
+                .leftJoin('information_schema.referential_constraints as referential_constraints', function () {
+                    this.on('key_usage.constraint_name', '=', 'referential_constraints.constraint_name');
+                    this.andOn('key_usage.constraint_schema', '=', 'referential_constraints.constraint_schema');
                 })
                 .where({ 'key_usage.table_schema': this.schemaName })
                 .whereIn('key_usage.table_name', tables),
@@ -229,13 +237,15 @@ export class PostgresIntrospection extends Introspection {
             const constraintDefinitions: ConstraintDefinition[] = [];
 
             Object.values(constraintMap).forEach((constraint) => {
-                const { constraint_type, constraint_name } = constraint;
+                const { constraint_type, constraint_name, delete_rule, update_rule } = constraint;
                 const columns = columnMap[constraint_name];
 
                 constraintDefinitions.push({
                     constraintName: constraint_name,
                     constraintType: constraint_type,
                     columnNames: columns.map((c) => c.column_name).sort(),
+                    on_delete: delete_rule,
+                    on_update: update_rule,
                 });
             });
             results[table] = constraintDefinitions;
@@ -383,9 +393,10 @@ export class PostgresIntrospection extends Introspection {
      */
     public async getSchemaTables(): Promise<string[]> {
         const schemaTables = await this.query(
-            this.knex('information_schema.columns')
+            this.knex('information_schema.tables')
                 .select('table_name')
                 .where({ table_schema: this.schemaName })
+                .where({ table_type: 'BASE TABLE' })
                 .groupBy('table_name'),
         );
 
