@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { CardinalityResolver } from './cardinality-resolver';
 import * as pluralize from 'pluralize';
+import { sortBy } from 'lodash';
 
 /**
  * Build a js schema that describes the table and relationships
@@ -201,6 +202,26 @@ export class TableSchemaBuilder {
     }
 
     /**
+     * Uses v8 chronological ordering to create a stable ordering based on lexical sort of keys
+     * @param data
+     */
+    private stableOrderedMap<T extends Record<string, any>>(data: T): T {
+        if (!data) {
+            return data;
+        }
+
+        const stable: any = {};
+
+        Object.keys(data)
+            .sort()
+            .forEach((each) => {
+                stable[each] = data[each];
+            });
+
+        return stable;
+    }
+
+    /**
      * Get the schema definition for a table
      */
     public buildTableDefinition(options?: { transitiveRelations: boolean }): TableSchemaDefinition {
@@ -234,12 +255,16 @@ export class TableSchemaBuilder {
 
         return {
             primaryKey: CardinalityResolver.primaryKey(tableConstraints),
-            keys: tableConstraints,
-            uniqueKeyCombinations,
-            relations: [...forwardRels, ...backwardRels, ...tableTransitiveRelations],
-            columns: tableColumns,
+            keys: sortBy(tableConstraints, (c) => c.constraintName),
+            uniqueKeyCombinations: sortBy(uniqueKeyCombinations, (u) => u.join(':')),
+            relations: [
+                ...sortBy(forwardRels, (r) => r.constraintName),
+                ...sortBy(backwardRels, (r) => r.constraintName),
+                ...sortBy(tableTransitiveRelations, (r) => r.alias),
+            ],
+            columns: this.stableOrderedMap(tableColumns),
             softDelete,
-            enums: tableEnums,
+            enums: this.stableOrderedMap(tableEnums),
         };
     }
 }
