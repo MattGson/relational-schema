@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/MattGson/relational-schema/compare/v0.5.0...v0.5.1) (2021-10-25)
+
+
+### Bug Fixes
+
+* **introspect:** fixes ordering of tables, columns etc to be stable ([09acd99](https://github.com/MattGson/relational-schema/commit/09acd99deaa1a502998aae47f69170f0d704e6ed)), closes [#25](https://github.com/MattGson/relational-schema/issues/25)
+
 # [0.5.0](https://github.com/MattGson/relational-schema/compare/v0.4.4...v0.5.0) (2021-10-11)
 
 
