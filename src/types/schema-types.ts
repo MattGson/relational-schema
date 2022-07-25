@@ -72,6 +72,7 @@ export interface ColumnDefinition {
     dbType: string;
     nullable: boolean;
     columnDefault: string | null;
+    characterMaximumLength: number | null;
     tsType?: ColumnType;
     columnName: string;
 }

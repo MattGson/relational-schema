@@ -64,6 +64,7 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
                 tsType: 'number',
                 columnName: 'user_id',
                 columnDefault: 'auto_increment',
+                characterMaximumLength: null,
             });
             expect(types['email']).toEqual({
                 dbType: 'varchar',
@@ -71,6 +72,7 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
                 tsType: 'string',
                 columnName: 'email',
                 columnDefault: null,
+                characterMaximumLength: null,
             });
             expect(types['first_name']).toEqual({
                 dbType: 'varchar',
@@ -78,6 +80,7 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
                 tsType: 'string',
                 columnName: 'first_name',
                 columnDefault: null,
+                characterMaximumLength: null,
             });
             expect(types['permissions']).toEqual({
                 dbType: 'enum',
@@ -85,6 +88,7 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
                 tsType: 'users_permissions',
                 columnName: 'permissions',
                 columnDefault: 'USER',
+                characterMaximumLength: null,
             });
             expect(types['deleted_at']).toEqual({
                 dbType: 'datetime',
@@ -92,6 +96,7 @@ describeif(DB() === 'mysql')('MySQLIntrospection', () => {
                 tsType: 'Date',
                 columnName: 'deleted_at',
                 columnDefault: null,
+                characterMaximumLength: null,
             });
         });
     });

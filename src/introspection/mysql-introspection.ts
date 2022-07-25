@@ -188,6 +188,7 @@ export class MySQLIntrospection extends Introspection {
                     dbType: data_type,
                     columnDefault: column_default || extra || null,
                     nullable: is_nullable === 'YES',
+                    characterMaximumLength: null, // TODO
                     columnName: column_name,
                     tsType: this.getTsTypeForColumn(table, column_name, data_type, enumTypes[table]),
                 };
