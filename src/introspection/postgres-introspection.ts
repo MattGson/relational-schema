@@ -199,6 +199,7 @@ export class PostgresIntrospection extends Introspection {
     /**
      * Get constraints for tables
      * Bulk operation across many tables
+     *
      * @param tables
      * @returns
      */
