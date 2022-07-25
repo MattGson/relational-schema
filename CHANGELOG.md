@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/MattGson/relational-schema/compare/v0.5.1...v0.6.0) (2022-07-25)
+
+
+### Features
+
+* **postgres:** provides maximum char length for columns ([62c1e5c](https://github.com/MattGson/relational-schema/commit/62c1e5c7754f803366b523e9a61a16930e987d6e))
+
 ## [0.5.1](https://github.com/MattGson/relational-schema/compare/v0.5.0...v0.5.1) (2021-10-25)
 
 
