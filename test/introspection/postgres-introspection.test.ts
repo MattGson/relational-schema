@@ -60,6 +60,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                 tsType: 'number',
                 columnName: 'user_id',
                 columnDefault: `nextval('users_user_id_seq'::regclass)`,
+                characterMaximumLength: null,
             });
             expect(types['email']).toEqual({
                 dbType: 'varchar',
@@ -67,6 +68,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                 tsType: 'string',
                 columnName: 'email',
                 columnDefault: null,
+                characterMaximumLength: 400,
             });
             expect(types['first_name']).toEqual({
                 dbType: 'varchar',
@@ -74,6 +76,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                 tsType: 'string',
                 columnName: 'first_name',
                 columnDefault: null,
+                characterMaximumLength: 200,
             });
             expect(types['permissions']).toEqual({
                 dbType: 'permissions',
@@ -81,6 +84,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                 tsType: 'permissions',
                 columnName: 'permissions',
                 columnDefault: `'USER'::permissions`,
+                characterMaximumLength: null,
             });
             expect(types['deleted_at']).toEqual({
                 dbType: 'timestamptz',
@@ -88,6 +92,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                 tsType: 'Date',
                 columnName: 'deleted_at',
                 columnDefault: null,
+                characterMaximumLength: null,
             });
         });
     });

@@ -157,11 +157,19 @@ export class PostgresIntrospection extends Introspection {
             udt_name: string;
             is_nullable: string;
             column_default: string | null;
+            character_maximum_length: number | null;
         };
 
         const rows: RowType[] = await this.query(
             this.knex('information_schema.columns')
-                .select('table_name', 'column_name', 'udt_name', 'is_nullable', 'column_default')
+                .select(
+                    'table_name',
+                    'column_name',
+                    'udt_name',
+                    'is_nullable',
+                    'character_maximum_length',
+                    'column_default',
+                )
                 .where({ table_schema: this.schemaName })
                 .whereIn('table_name', tables),
         );
@@ -178,6 +186,7 @@ export class PostgresIntrospection extends Introspection {
                     dbType,
                     columnDefault: schemaItem.column_default,
                     nullable: schemaItem.is_nullable === 'YES',
+                    characterMaximumLength: schemaItem.character_maximum_length,
                     columnName,
                     tsType: this.getTsTypeForColumn(table, columnName, dbType, enumTypes[table]),
                 };
