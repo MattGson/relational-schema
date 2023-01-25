@@ -124,7 +124,6 @@ async function introspect(args: any) {
         await generate({ conn, outdir: GENERATED_DIR, format, prettierConfig, logLevel: logs, options });
     } catch (e) {
         logger.error(e);
-        logger.debug(e.stack);
         logger.info('Use: "relation -h" to see help');
         process.exit(1);
     }

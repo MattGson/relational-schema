@@ -34,7 +34,7 @@ export abstract class Introspection {
      * @param query
      * @returns
      */
-    protected async query<T extends {}>(query: Knex.QueryBuilder<T>): Promise<T> {
+    protected async query<T extends Record<string, any>>(query: Knex.QueryBuilder<T>): Promise<T> {
         if (this.logLevel === LogLevel.debug) {
             logger.debug('Executing query: ', query.toSQL().sql);
         }
