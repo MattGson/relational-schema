@@ -11,8 +11,8 @@ import {
     TableColumnsDefinition,
     TableMap,
 } from '../types';
-import Knex = require('knex');
 import { Introspection } from './introspection';
+import { Knex } from 'knex';
 import _ from 'lodash';
 import { logger } from '../lib/logger';
 

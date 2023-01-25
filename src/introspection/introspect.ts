@@ -1,4 +1,4 @@
-import Knex from 'knex';
+import { knex as knexI } from 'knex';
 import { BuilderOptions, ConnectionConfig, DatabaseSchema, LogLevel } from '../types';
 import { Introspection } from './introspection';
 import { PostgresIntrospection } from './postgres-introspection';
@@ -19,7 +19,7 @@ export const introspectSchema = async (params: {
 
     const { host, port, user, database, schema } = conn.connection;
 
-    const knex = Knex(conn);
+    const knex = knexI(conn);
     let DB: Introspection;
 
     if (conn.client === 'mysql') {

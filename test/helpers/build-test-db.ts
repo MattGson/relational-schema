@@ -1,4 +1,4 @@
-import Knex from 'knex';
+import { Knex } from 'knex';
 import { migrateDb } from './migrate-db';
 import { ConnectionConfig } from 'src/types';
 import { Connection as PGConn } from 'pg';

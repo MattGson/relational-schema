@@ -1,4 +1,4 @@
-import Knex from 'knex';
+import { Knex } from 'knex';
 import _ from 'lodash';
 import { logger } from '../lib/logger';
 import {
@@ -34,7 +34,7 @@ export abstract class Introspection {
      * @param query
      * @returns
      */
-    protected async query<T>(query: Knex.QueryBuilder<T>): Promise<T> {
+    protected async query<T extends {}>(query: Knex.QueryBuilder<T>): Promise<T> {
         if (this.logLevel === LogLevel.debug) {
             logger.debug('Executing query: ', query.toSQL().sql);
         }

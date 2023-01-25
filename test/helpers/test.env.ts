@@ -1,4 +1,4 @@
-import Knex from 'knex';
+import { Knex } from 'knex';
 import { PostgresIntrospection } from 'src/introspection';
 import { Introspection } from 'src/introspection/introspection';
 import { MySQLIntrospection } from 'src/introspection/mysql-introspection';
