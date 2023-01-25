@@ -3,6 +3,7 @@
         "module": "commonjs",
         "target": "es6",
         "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
         "declaration": true,
         "newLine": "LF",
         "sourceMap": true,
