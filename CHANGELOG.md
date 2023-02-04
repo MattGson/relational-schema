@@ -1,3 +1,11 @@
+## [0.6.1](https://github.com/MattGson/relational-schema/compare/v0.6.0...v0.6.1) (2023-02-04)
+
+
+### Bug Fixes
+
+* **ci:** fixes test failures ([37a8dad](https://github.com/MattGson/relational-schema/commit/37a8dad5ba3e93f83534a24e9128a790b57cc916))
+* **tests:** fixes test and lint issues ([f0014ea](https://github.com/MattGson/relational-schema/commit/f0014ea29f096ca6e23e6abf1c42f2d6e1717d42))
+
 # [0.6.0](https://github.com/MattGson/relational-schema/compare/v0.5.1...v0.6.0) (2022-07-25)
 
 
