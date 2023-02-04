@@ -24,7 +24,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
-            - uses: actions/setup-node@v1
+            - uses: actions/setup-node@v3
             - run: npm ci
             - run: npm run lint
 
@@ -33,6 +33,7 @@ jobs:
         strategy:
             matrix:
                 node: [14, 16]
+        name: test-mysql node ${{ matrix.node }}
         services:
             mysql:
                 image: mysql:5.7
@@ -46,7 +47,7 @@ jobs:
 
         steps:
             - uses: actions/checkout@v2
-            - uses: actions/setup-node@v1
+            - uses: actions/setup-node@v3
             - run: npm ci
             - run: npm run test:mysql
 
@@ -55,6 +56,7 @@ jobs:
         strategy:
             matrix:
                 node: [14, 16]
+        name: test-postgres node ${{ matrix.node }}
         services:
             postgres:
                 image: postgres:13-alpine
@@ -70,6 +72,6 @@ jobs:
 
         steps:
             - uses: actions/checkout@v2
-            - uses: actions/setup-node@v1
+            - uses: actions/setup-node@v3
             - run: npm ci
             - run: npm run test:pg
