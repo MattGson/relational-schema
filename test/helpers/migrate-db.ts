@@ -1,6 +1,8 @@
 import { Knex } from 'knex';
 
 export const migrateDb = async (knex: Knex, pg = false) => {
+    console.info(`Building db schema for ${pg ? 'pg' : 'mysql'}`);
+
     await knex.schema.dropTableIfExists('team_members_positions');
     await knex.schema.dropTableIfExists('team_members');
     await knex.schema.dropTableIfExists('teams');

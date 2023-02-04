@@ -10,8 +10,8 @@ module.exports = {
     // Indicates whether the coverage information should be collected while executing the test
     collectCoverage: false,
 
-    notify: true,
-    notifyMode: 'always',
+    // notify: true,
+    // notifyMode: 'always',
 
     // The directory where Jest should output its coverage files
     coverageDirectory: 'coverage',
