@@ -48,7 +48,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
         it('Loads all columns for a table', async (): Promise<void> => {
             const enums = await intro.getEnumTypesForTables(['users']);
             const { users } = await intro.getTableTypes(['users', 'teams'], enums);
-            expect(Object.keys(users)).toHaveLength(10);
+            expect(Object.keys(users)).toHaveLength(11);
         });
         it('Maps types correctly from db to typescript including enums', async (): Promise<void> => {
             const enums = await intro.getEnumTypesForTables(['users']);
@@ -57,6 +57,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
             expect(types['user_id']).toEqual({
                 dbType: 'int4',
                 nullable: false,
+                generated: false,
                 tsType: 'number',
                 columnName: 'user_id',
                 columnDefault: `nextval('users_user_id_seq'::regclass)`,
@@ -65,6 +66,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
             expect(types['email']).toEqual({
                 dbType: 'varchar',
                 nullable: false,
+                generated: false,
                 tsType: 'string',
                 columnName: 'email',
                 columnDefault: null,
@@ -73,14 +75,25 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
             expect(types['first_name']).toEqual({
                 dbType: 'varchar',
                 nullable: true,
+                generated: false,
                 tsType: 'string',
                 columnName: 'first_name',
                 columnDefault: null,
                 characterMaximumLength: 200,
             });
+            expect(types['full_name']).toEqual({
+                dbType: 'varchar',
+                nullable: true,
+                generated: true,
+                tsType: 'string',
+                columnName: 'full_name',
+                columnDefault: null,
+                characterMaximumLength: 401,
+            });
             expect(types['permissions']).toEqual({
                 dbType: 'permissions',
                 nullable: true,
+                generated: false,
                 tsType: 'permissions',
                 columnName: 'permissions',
                 columnDefault: `'USER'::permissions`,
@@ -89,6 +102,7 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
             expect(types['deleted_at']).toEqual({
                 dbType: 'timestamptz',
                 nullable: true,
+                generated: false,
                 tsType: 'Date',
                 columnName: 'deleted_at',
                 columnDefault: null,

@@ -212,6 +212,7 @@ describe('TableSchemaBuilder', () => {
                             user_id: {
                                 dbType: 'int',
                                 nullable: false,
+                                generated: false,
                                 tsType: 'number',
                                 characterMaximumLength: null,
                                 columnName: 'user_id',
@@ -240,6 +241,7 @@ describe('TableSchemaBuilder', () => {
                             user_id: {
                                 dbType: 'int4',
                                 nullable: false,
+                                generated: false,
                                 tsType: 'number',
                                 characterMaximumLength: null,
                                 columnName: 'user_id',

@@ -16,6 +16,7 @@ export const migrateDb = async (knex: Knex, pg = false) => {
     // table with multiple enums
     // with self-relation
     // with unique keys
+    // and a generated column
     await knex.schema.createTable('users', (table) => {
         table.increments('user_id').unsigned().primary();
         table.integer('best_friend_id').unsigned().comment('Best friend - self relations');
@@ -38,6 +39,27 @@ export const migrateDb = async (knex: Knex, pg = false) => {
 
         table.foreign('best_friend_id').references('users.user_id');
     });
+
+    // generated columns have different syntax across PG & MySQL
+    // & knex doesn't support them yet (see https://github.com/knex/knex/issues/6235)
+    // so have to use raw() for this
+    if (pg) {
+        await knex.schema.raw(
+        `
+        ALTER TABLE users
+            ADD COLUMN full_name varchar(401)
+                GENERATED ALWAYS AS ( first_name || ' ' || last_name ) STORED;
+        
+        `);
+    } else {
+        await knex.raw(
+            `
+        ALTER TABLE users
+            ADD COLUMN full_name VARCHAR(401)
+                GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED;
+        `,
+        );
+    }
 
     // table with multiple references to the same table (users)
     // also has conflicting naming between author and author_id

@@ -166,13 +166,14 @@ export class MySQLIntrospection extends Introspection {
             column_name: string;
             data_type: string;
             is_nullable: string;
+            generation_expression: string;
             column_default: string | null;
             extra: string | null;
         };
 
         const rows: RowType[] = await this.query(
             this.knex('information_schema.columns')
-                .select('column_name', 'data_type', 'is_nullable', 'column_default', 'extra', 'table_name')
+                .select('column_name', 'data_type', 'is_nullable', 'generation_expression', 'column_default', 'extra', 'table_name')
                 .where({ table_schema: this.databaseName })
                 .whereIn('table_name', tables),
         );
@@ -183,11 +184,12 @@ export class MySQLIntrospection extends Introspection {
             const tableDefinition: TableColumnsDefinition = {};
 
             rows.map((schemaItem) => {
-                const { column_name, column_default, extra, data_type, is_nullable } = schemaItem;
+                const { column_name, column_default, extra, data_type, is_nullable, generation_expression } = schemaItem;
                 tableDefinition[column_name] = {
                     dbType: data_type,
                     columnDefault: column_default || extra || null,
                     nullable: is_nullable === 'YES',
+                    generated: generation_expression.length > 0,
                     characterMaximumLength: null, // TODO
                     columnName: column_name,
                     tsType: this.getTsTypeForColumn(table, column_name, data_type, enumTypes[table]),
