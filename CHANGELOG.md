@@ -1,3 +1,10 @@
+## [0.6.2](https://github.com/MattGson/relational-schema/compare/v0.6.1...v0.6.2) (2025-12-17)
+
+
+### Bug Fixes
+
+* **introspection:** expose generated columns ([ad29a85](https://github.com/MattGson/relational-schema/commit/ad29a855024b9393e128c743c11676ad850885cf))
+
 ## [0.6.1](https://github.com/MattGson/relational-schema/compare/v0.6.0...v0.6.1) (2023-02-04)
 
 
