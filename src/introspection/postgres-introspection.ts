@@ -20,6 +20,9 @@ export class PostgresIntrospection extends Introspection {
     private knex: Knex;
     protected logLevel: LogLevel;
 
+    /** Cached set of partition child table names for this schema */
+    private _partitionChildren: Set<string> | null = null;
+
     public constructor(params: { knex: Knex; schemaName?: string; logLevel: LogLevel }) {
         super();
         const { knex, schemaName, logLevel } = params;
@@ -27,6 +30,23 @@ export class PostgresIntrospection extends Introspection {
         if (schemaName) this.schemaName = schemaName;
         else this.schemaName = 'public';
         this.logLevel = logLevel;
+    }
+
+    private async getPartitionChildren(): Promise<Set<string>> {
+        if (this._partitionChildren) return this._partitionChildren;
+
+        type RowType = { child_table: string };
+
+        const rows: RowType[] = await this.query(
+            this.knex('pg_inherits')
+                .join('pg_class as child', 'pg_inherits.inhrelid', '=', 'child.oid')
+                .join('pg_namespace as ns', 'child.relnamespace', '=', 'ns.oid')
+                .where({ 'ns.nspname': this.schemaName })
+                .select('child.relname as child_table'),
+        );
+
+        this._partitionChildren = new Set(rows.map((r) => r.child_table));
+        return this._partitionChildren;
     }
 
     public getTsTypeForColumn(
@@ -302,6 +322,8 @@ export class PostgresIntrospection extends Introspection {
                 .orderBy('c.constraint_name', 'x.ordinal_position'),
         );
 
+        const partitionChildren = await this.getPartitionChildren();
+
         const results: TableMap<RelationDefinition[]> = {};
 
         this.tableMap(rows, (table, rows) => {
@@ -310,6 +332,7 @@ export class PostgresIntrospection extends Introspection {
             rows.forEach((row) => {
                 const { column_name, referenced_table_name, referenced_column_name, constraint_name } = row;
                 if (referenced_table_name == null || referenced_column_name == null) return;
+                if (partitionChildren.has(referenced_table_name)) return;
 
                 if (!relations[constraint_name])
                     relations[constraint_name] = {
@@ -319,10 +342,11 @@ export class PostgresIntrospection extends Introspection {
                         constraintName: constraint_name,
                         type: 'belongsTo', // default always N - 1
                     };
-                relations[constraint_name].joins.push({
-                    fromColumn: column_name,
-                    toColumn: referenced_column_name,
-                });
+                const joins = relations[constraint_name].joins;
+                // Deduplicate: partition children cause repeated join rows.
+                if (!joins.some((j) => j.fromColumn === column_name && j.toColumn === referenced_column_name)) {
+                    joins.push({ fromColumn: column_name, toColumn: referenced_column_name });
+                }
             });
             results[table] = Object.values(relations);
         });
@@ -367,6 +391,8 @@ export class PostgresIntrospection extends Introspection {
                 .orderBy('c.constraint_name', 'x.ordinal_position'),
         );
 
+        const partitionChildren = await this.getPartitionChildren();
+
         const results: TableMap<RelationDefinition[]> = {};
 
         this.tableMap(rows, (table, rows) => {
@@ -381,6 +407,7 @@ export class PostgresIntrospection extends Introspection {
                     table_name,
                 } = row;
                 if (table_name == null || referenced_column_name == null) return;
+                if (partitionChildren.has(referencing_table_name)) return;
 
                 if (!relations[constraint_name])
                     relations[constraint_name] = {
@@ -390,10 +417,11 @@ export class PostgresIntrospection extends Introspection {
                         constraintName: constraint_name,
                         type: 'hasMany', // default always 1 - N
                     };
-                relations[constraint_name].joins.push({
-                    fromColumn: referenced_column_name,
-                    toColumn: referencing_column_name,
-                });
+                const joins = relations[constraint_name].joins;
+                // Deduplicate: partition children cause repeated join rows.
+                if (!joins.some((j) => j.fromColumn === referenced_column_name && j.toColumn === referencing_column_name)) {
+                    joins.push({ fromColumn: referenced_column_name, toColumn: referencing_column_name });
+                }
             });
             results[table] = Object.values(relations);
         });
@@ -413,6 +441,10 @@ export class PostgresIntrospection extends Introspection {
                 .groupBy('table_name'),
         );
 
-        return schemaTables.map((schemaItem: { table_name: string }) => schemaItem.table_name);
+        const partitionChildren = await this.getPartitionChildren();
+
+        return schemaTables
+            .map((schemaItem: { table_name: string }) => schemaItem.table_name)
+            .filter((name: string) => !partitionChildren.has(name));
     }
 }
