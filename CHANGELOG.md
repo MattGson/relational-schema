@@ -1,3 +1,10 @@
+## [0.6.3](https://github.com/MattGson/relational-schema/compare/v0.6.2...v0.6.3) (2026-03-24)
+
+
+### Bug Fixes
+
+* exclude partition children from introspection ([9774c98](https://github.com/MattGson/relational-schema/commit/9774c98f4d62550fc12a81d4a75dc4a090a4d04e))
+
 ## [0.6.2](https://github.com/MattGson/relational-schema/compare/v0.6.1...v0.6.2) (2025-12-17)
 
 
