@@ -3,6 +3,10 @@ import { Knex } from 'knex';
 export const migrateDb = async (knex: Knex, pg = false) => {
     console.info(`Building db schema for ${pg ? 'pg' : 'mysql'}`);
 
+    if (pg) {
+        // Drop partitioned table and children first
+        await knex.raw(`DROP TABLE IF EXISTS events CASCADE`);
+    }
     await knex.schema.dropTableIfExists('team_members_positions');
     await knex.schema.dropTableIfExists('team_members');
     await knex.schema.dropTableIfExists('teams');
@@ -109,4 +113,31 @@ export const migrateDb = async (knex: Knex, pg = false) => {
         table.primary(['team_id', 'user_id']);
         table.foreign(['team_id', 'user_id']).references(['team_id', 'user_id']).inTable('team_members');
     });
+
+    // Partitioned table with FK to users (Postgres-only)
+    // Tests that partition children are excluded from introspection
+    if (pg) {
+        await knex.raw(`
+            CREATE TABLE events (
+                event_id SERIAL,
+                user_id INTEGER NOT NULL,
+                occurred_at TIMESTAMPTZ NOT NULL,
+                payload JSONB,
+                CONSTRAINT fk_events_users FOREIGN KEY (user_id) REFERENCES users (user_id)
+            ) PARTITION BY RANGE (occurred_at);
+        `);
+        // Create three partition children
+        await knex.raw(`
+            CREATE TABLE events_p202501 PARTITION OF events
+                FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
+        `);
+        await knex.raw(`
+            CREATE TABLE events_p202502 PARTITION OF events
+                FOR VALUES FROM ('2025-02-01') TO ('2025-03-01');
+        `);
+        await knex.raw(`
+            CREATE TABLE events_p202503 PARTITION OF events
+                FOR VALUES FROM ('2025-03-01') TO ('2025-04-01');
+        `);
+    }
 };

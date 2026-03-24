@@ -1,7 +1,7 @@
 import 'jest-extended';
 import { PostgresIntrospection } from 'src/introspection';
 import { Introspection } from 'src/introspection/introspection';
-import { LogLevel } from 'src/types';
+import { LogLevel, RelationDefinition } from 'src/types';
 import { closeConnection, DB, describeif, knex, openConnection } from 'test/helpers';
 
 describeif(DB() === 'pg')('PostgresIntrospection', () => {
@@ -19,8 +19,23 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
     describe('getSchemaTables', () => {
         it('Loads all tables in a schema', async (): Promise<void> => {
             const tables = await intro.getSchemaTables();
-            expect(tables).toHaveLength(5);
-            expect(tables).toIncludeAllMembers(['users', 'teams', 'team_members', 'posts', 'team_members_positions']);
+            expect(tables).toHaveLength(6);
+            expect(tables).toIncludeAllMembers([
+                'users',
+                'teams',
+                'team_members',
+                'posts',
+                'team_members_positions',
+                'events',
+            ]);
+        });
+        it('Excludes partition children from table list', async (): Promise<void> => {
+            const tables = await intro.getSchemaTables();
+            expect(tables).not.toIncludeAnyMembers([
+                'events_p202501',
+                'events_p202502',
+                'events_p202503',
+            ]);
         });
     });
     describe('getEnumTypesForTable', () => {
@@ -261,6 +276,28 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                 }),
             ]);
         });
+        it('Points forward relation toTable to the parent table, not partition children', async (): Promise<void> => {
+            const { events } = await intro.getForwardRelations(['events']);
+            expect(events).toHaveLength(1);
+            expect(events).toIncludeAllMembers([
+                expect.objectContaining({
+                    toTable: 'users',
+                    joins: [
+                        {
+                            fromColumn: 'user_id',
+                            toColumn: 'user_id',
+                        },
+                    ],
+                    type: 'belongsTo',
+                }),
+            ]);
+        });
+        it('Does not produce duplicate joins from partition children', async (): Promise<void> => {
+            const { events } = await intro.getForwardRelations(['events']);
+            const fkRelation = events.find((r: RelationDefinition) => r.toTable === 'users');
+            expect(fkRelation).toBeDefined();
+            expect(fkRelation!.joins).toHaveLength(1);
+        });
     });
     describe('getBackwardRelations', () => {
         it('Loads all relations on foreign keys referencing the table', async (): Promise<void> => {
@@ -348,6 +385,39 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
                     ],
                 }),
             ]);
+        });
+        it('Points backward relation to parent table, not partition children', async (): Promise<void> => {
+            const { users } = await intro.getBackwardRelations(['users', 'events']);
+            const eventsRelations = users.filter((r: RelationDefinition) => r.toTable === 'events');
+            expect(eventsRelations).toHaveLength(1);
+            expect(eventsRelations).toIncludeAllMembers([
+                expect.objectContaining({
+                    toTable: 'events',
+                    joins: [
+                        {
+                            fromColumn: 'user_id',
+                            toColumn: 'user_id',
+                        },
+                    ],
+                    type: 'hasMany',
+                }),
+            ]);
+        });
+        it('Does not produce backward relations from partition children', async (): Promise<void> => {
+            const { users } = await intro.getBackwardRelations(['users', 'events']);
+            const partitionRelations = users.filter(
+                (r: RelationDefinition) =>
+                    r.toTable === 'events_p202501' ||
+                    r.toTable === 'events_p202502' ||
+                    r.toTable === 'events_p202503',
+            );
+            expect(partitionRelations).toHaveLength(0);
+        });
+        it('Does not produce duplicate backward joins from partition children', async (): Promise<void> => {
+            const { users } = await intro.getBackwardRelations(['users', 'events']);
+            const eventsRelation = users.find((r: RelationDefinition) => r.toTable === 'events');
+            expect(eventsRelation).toBeDefined();
+            expect(eventsRelation!.joins).toHaveLength(1);
         });
     });
 });
