@@ -319,7 +319,10 @@ export class PostgresIntrospection extends Introspection {
                     'y.table_name as referenced_table_name',
                     'y.column_name as referenced_column_name',
                 )
-                .orderBy('c.constraint_name', 'x.ordinal_position'),
+                .orderBy([
+                    { column: 'c.constraint_name', order: 'asc' },
+                    { column: 'x.ordinal_position', order: 'asc' },
+                ]),
         );
 
         const partitionChildren = await this.getPartitionChildren();
@@ -388,7 +391,10 @@ export class PostgresIntrospection extends Introspection {
                     'y.table_name',
                     'y.column_name as referenced_column_name',
                 )
-                .orderBy('c.constraint_name', 'x.ordinal_position'),
+                .orderBy([
+                    { column: 'c.constraint_name', order: 'asc' },
+                    { column: 'x.ordinal_position', order: 'asc' },
+                ]),
         );
 
         const partitionChildren = await this.getPartitionChildren();

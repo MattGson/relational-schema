@@ -16,6 +16,42 @@ describeif(DB() === 'pg')('PostgresIntrospection', () => {
     afterAll(async () => {
         await closeConnection();
     });
+    it('Preserves declared composite-key order and column pairing in both directions', async () => {
+        await knex().transaction(async (trx) => {
+            await trx.raw(`
+                CREATE SCHEMA relation_order_test;
+                CREATE TABLE relation_order_test.parents (
+                    z_key integer NOT NULL,
+                    a_key integer NOT NULL,
+                    CONSTRAINT relation_order_parent_key UNIQUE (z_key, a_key)
+                );
+                CREATE TABLE relation_order_test.children (
+                    a_ref integer,
+                    z_ref integer,
+                    CONSTRAINT relation_order_child_fkey FOREIGN KEY (z_ref, a_ref)
+                        REFERENCES relation_order_test.parents (z_key, a_key)
+                );
+            `);
+            const introspection = new PostgresIntrospection({
+                knex: trx,
+                schemaName: 'relation_order_test',
+                logLevel: LogLevel.info,
+            });
+            const forward = await introspection.getForwardRelations(['children']);
+            expect(forward.children).toHaveLength(1);
+            expect(forward.children[0].joins).toEqual([
+                { fromColumn: 'z_ref', toColumn: 'z_key' },
+                { fromColumn: 'a_ref', toColumn: 'a_key' },
+            ]);
+            const backward = await introspection.getBackwardRelations(['parents']);
+            expect(backward.parents).toHaveLength(1);
+            expect(backward.parents[0].joins).toEqual([
+                { fromColumn: 'z_key', toColumn: 'z_ref' },
+                { fromColumn: 'a_key', toColumn: 'a_ref' },
+            ]);
+            await trx.rollback();
+        });
+    });
     describe('getSchemaTables', () => {
         it('Loads all tables in a schema', async (): Promise<void> => {
             const tables = await intro.getSchemaTables();
