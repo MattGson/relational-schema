@@ -1,25 +1,43 @@
 name: Release
+
 on:
-    push:
-        branches:
-            - master
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
 jobs:
-    release:
-        name: Release
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v2
-              with:
-                  fetch-depth: 0
-            - name: Setup Node.js
-              uses: actions/setup-node@v3
-              with:
-                  node-version: 16
-            - name: Install dependencies
-              run: npm ci
-            - name: Release
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-              run: npx semantic-release
+  validation:
+    name: Validate release revision
+    permissions:
+      contents: read
+    uses: ./.github/workflows/features.yml
+
+  release:
+    name: Release
+    needs: validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
