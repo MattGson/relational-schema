@@ -41,8 +41,8 @@ buildDBSchemas()
     .then((conn) =>
         generate({ conn, outdir, format: Format.es6, logLevel: LogLevel.info, options: { transitiveRelations: true } }),
     )
-    .then(() => closeConnection())
     .catch((e) => {
         logger.error(e);
-        return closeConnection();
-    });
+        process.exitCode = 1;
+    })
+    .finally(() => closeConnection());

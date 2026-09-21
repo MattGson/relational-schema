@@ -1,77 +1,111 @@
 name: feature-actions
-on:
-    # Trigger the workflow on push or pull request,
-    # but only for the main branch
-    # Ignore when only docs are changed
 
-    push:
-        paths:
-            - 'src/**'
-            - 'test/**'
-        branches:
-            - main
-            - master
-    pull_request:
-        paths:
-            - 'src/**'
-            - 'test/**'
-        branches:
-            - main
-            - master
+on:
+  workflow_call:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
 
 jobs:
-    lint:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v3
-            - run: npm ci
-            - run: npm run lint
+  checks:
+    name: Typecheck, lint, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run build
 
-    test-mysql:
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node: [14, 16]
-        name: test-mysql node ${{ matrix.node }}
-        services:
-            mysql:
-                image: mysql:5.7
-                ports:
-                    - 3306:3306
-                env:
-                    TZ: 'UTC'
-                    MYSQL_ROOT_PASSWORD: ''
-                    MYSQL_ALLOW_EMPTY_PASSWORD: 1
-                    MYSQL_DATABASE: 'tests'
+  test-mysql:
+    name: MySQL 5.7 / Node.js ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DB: mysql
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [16, 22]
+    services:
+      mysql:
+        image: mysql:5.7
+        ports:
+          - 3306:3306
+        env:
+          TZ: UTC
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_DATABASE: tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Wait for MySQL
+        run: >-
+          timeout 60 bash -c 'until docker exec "${{ job.services.mysql.id }}"
+          mysqladmin ping --host=127.0.0.1 --protocol=tcp --silent; do sleep 1; done'
+      - run: npm run test:mysql
+      - run: npm run test:package
+      - name: MySQL diagnostics
+        if: failure()
+        run: |
+          docker ps -a
+          docker logs "${{ job.services.mysql.id }}"
 
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v3
-            - run: npm ci
-            - run: npm run test:mysql
-
-    test-postgres:
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                node: [14, 16]
-        name: test-postgres node ${{ matrix.node }}
-        services:
-            postgres:
-                image: postgres:13-alpine
-                ports:
-                    - 5432:5432
-                env:
-                    TZ: 'UTC'
-                    PGTZ: 'UTC'
-                    POSTGRES_USER: 'postgres' # default user
-                    POSTGRES_DB: 'tests'
-                    POSTGRES_PASSWORD: 'password'
-                    POSTGRES_HOST_AUTH_METHOD: 'trust' # allow all connections without password
-
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v3
-            - run: npm ci
-            - run: npm run test:pg
+  test-postgres:
+    name: PostgreSQL 13 / Node.js ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DB: pg
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [16, 22]
+    services:
+      postgres:
+        image: postgres:13-alpine
+        ports:
+          - 5432:5432
+        env:
+          TZ: UTC
+          PGTZ: UTC
+          POSTGRES_USER: postgres
+          POSTGRES_DB: tests
+          POSTGRES_PASSWORD: password
+          POSTGRES_HOST_AUTH_METHOD: trust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Wait for PostgreSQL
+        run: >-
+          timeout 60 bash -c 'until docker exec "${{ job.services.postgres.id }}"
+          pg_isready --host=127.0.0.1 --port=5432 --username=postgres --dbname=tests;
+          do sleep 1; done'
+      - run: npm run test:pg
+      - run: npm run test:package
+      - name: PostgreSQL diagnostics
+        if: failure()
+        run: |
+          docker ps -a
+          docker logs "${{ job.services.postgres.id }}"
